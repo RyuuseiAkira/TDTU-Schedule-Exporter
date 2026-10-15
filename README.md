@@ -27,7 +27,7 @@ Mô tả sự kiện có dạng: `Nhóm 5 | Mã: 501042 | Programming Methodolog
 
 ## 📦 Cài đặt
 
-1. Tải code: `git clone https://github.com/<your-username>/<repo>.git` hoặc **Code → Download ZIP** rồi giải nén.
+1. Tải code: `git clone https://github.com/RyuuseiAkira/TDTU-Schedule-Exporter.git` hoặc **Code → Download ZIP** rồi giải nén.
 2. Mở `chrome://extensions` (Edge: `edge://extensions`).
 3. Bật **Developer mode** (góc trên bên phải).
 4. Bấm **Load unpacked** → chọn thư mục vừa tải (thư mục có file `manifest.json`).
