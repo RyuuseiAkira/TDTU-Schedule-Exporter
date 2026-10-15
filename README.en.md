@@ -173,8 +173,6 @@ Re-sync any time: existing events are **updated** (room, time, color…) instead
 - The timetable is **not cached**.
 - Revoke access any time at <https://myaccount.google.com/permissions>.
 
-> 🙋 **If you fork / contribute:** never commit `.ics` files, saved timetable pages (`.html`), or screenshots containing your schedule, name or student ID. `.gitignore` already blocks common extensions.
-
 ---
 
 ## 🗂️ Project structure
