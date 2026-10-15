@@ -173,8 +173,6 @@ Chạy đồng bộ lại bất cứ lúc nào: sự kiện cũ được **cập
 - Lịch học **không được lưu cache**.
 - Thu hồi quyền bất cứ lúc nào tại <https://myaccount.google.com/permissions>.
 
-> 🙋 **Nếu bạn fork / đóng góp:** đừng commit file `.ics`, trang thời khoá biểu đã lưu (`.html`) hay ảnh chụp có chứa lịch học, tên, MSSV của bạn. `.gitignore` đã chặn sẵn các đuôi file phổ biến.
-
 ---
 
 ## 🗂️ Cấu trúc dự án
