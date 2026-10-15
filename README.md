@@ -1,2 +1,208 @@
-# TDTU-Schedule-Exporter
-Chrome/Edge extension that exports your TDTU timetable to .ics/Excel or syncs it to Google Calendar.
+# 🎓 TDTU Schedule Exporter
+
+[English](README.en.md) · **Tiếng Việt**
+
+Extension Chrome / Edge giúp lấy **thời khoá biểu** từ trang lịch học của Đại học Tôn Đức Thắng (TDTU) và:
+
+- 📆 xuất file **.ics** (Google Calendar, Outlook, Apple Calendar…)
+- 📊 xuất file **Excel / CSV**
+- 🎨 **đồng bộ thẳng lên Google Calendar, mỗi môn một màu** riêng
+
+> ⚠️ Đây là dự án cá nhân, **không liên kết với TDTU**. Dựa trên [MinhQuan06/TDTU-extensions](https://github.com/MinhQuan06/TDTU-extensions).
+
+## ✨ Tính năng
+
+| Tính năng | Mô tả |
+|---|---|
+| Lấy lịch theo tuần | Đọc bảng thời khoá biểu đang mở, ra đúng ngày thật của từng buổi học |
+| Màu theo môn | Gán màu theo **mã môn**, tuỳ chỉnh ngay trong Settings |
+| Đồng bộ Google Calendar | Tạo / cập nhật sự kiện qua API, chạy lại nhiều lần **không bị trùng** |
+| Blacklist | Ẩn môn theo mã môn hoặc từ khoá tên (mặc định ẩn `000000` – Lịch học Tiếng Anh dự kiến) |
+| Bỏ qua "GV báo vắng" | Công tắc trong Settings; lớp báo vắng không bị xuất / đồng bộ |
+| Không lưu cache | Mỗi lần mở popup đều đọc lại lịch hiện tại từ trang TDTU |
+
+Mô tả sự kiện có dạng: `Nhóm 5 | Mã: 501042 | Programming Methodology`
+
+---
+
+## 📦 Cài đặt
+
+1. Tải code: `git clone https://github.com/<your-username>/<repo>.git` hoặc **Code → Download ZIP** rồi giải nén.
+2. Mở `chrome://extensions` (Edge: `edge://extensions`).
+3. Bật **Developer mode** (góc trên bên phải).
+4. Bấm **Load unpacked** → chọn thư mục vừa tải (thư mục có file `manifest.json`).
+
+> 💡 Sau khi sửa code hoặc `config.js`, bấm nút ⟳ **Reload** trên thẻ extension.
+
+## 🚀 Sử dụng
+
+1. Đăng nhập [stdportal.tdtu.edu.vn](https://stdportal.tdtu.edu.vn), vào trang **Thời khoá biểu** (bảng lịch theo tuần).
+2. Bấm icon extension → **📅 Lấy lịch học**.
+3. Chọn một trong các cách xuất:
+   - **📆 Xuất .ics** → import vào lịch (⚠️ Google Calendar **không giữ màu** từ file .ics).
+   - **📊 Xuất Excel**
+   - **🎨 Đồng bộ Google Calendar (có màu)** → cần cài đặt API một lần, xem bên dưới.
+
+Extension chỉ đọc **tuần đang hiển thị** trên trang. Muốn xuất tuần khác, chuyển tuần trên trang TDTU rồi bấm **Lấy lịch học** lại.
+
+---
+
+## ⚙️ Settings
+
+Bấm nút **⚙️** trong popup (hoặc chuột phải icon extension → *Options*). Mọi thay đổi **tự lưu**.
+
+- **🎨 Màu theo môn học**: mỗi dòng là một mã môn + màu. Bấm chấm tròn để chọn màu, 🚫 để chuyển môn vào blacklist, 🗑 để xoá.
+  Môn chưa khai báo dùng **màu mặc định**. Popup có nút **➕ Thêm vào Settings** để tự gán màu cho các môn mới.
+- **📅 Lớp học**: công tắc *Bỏ qua các lớp có "GV báo vắng"* (mặc định bật).
+- **🚫 Blacklist**: nhập **mã môn** (toàn số, khớp chính xác, vd `000000`) hoặc **từ khoá** trong tên môn (vd `tiếng anh`, không phân biệt hoa thường). ⚠️ Từ khoá ngắn có thể ẩn nhầm môn khác.
+- **☁️ Google Calendar**: Client ID và Calendar ID (xem hướng dẫn bên dưới).
+- **♻️ Khôi phục mặc định**.
+
+Google chỉ cho **11 màu** cho sự kiện: Lavender, Sage, Grape, Flamingo, Banana, Tangerine, Peacock, Graphite, Blueberry, Basil, Tomato. Không dùng được mã hex tuỳ ý.
+
+Giá trị mặc định ban đầu nằm trong `config.js` (bạn không cần sửa file này nếu dùng Settings).
+
+---
+
+## 🔑 Cài đặt Google Calendar API (làm 1 lần, miễn phí, ~10 phút)
+
+### Vì sao cần bước này?
+
+Khi import file `.ics`, Google Calendar **bỏ qua màu** của từng sự kiện. Cách duy nhất để mỗi môn một màu là tạo sự kiện qua **Google Calendar API** (trường `colorId`). API cần một **OAuth Client ID** do chính bạn tạo, để extension xin quyền thêm sự kiện vào lịch của bạn.
+
+- Không cần thẻ thanh toán, Google Calendar API miễn phí.
+- **Client ID không phải bí mật** (không có "client secret" trong extension này), nhưng vẫn nên dùng Client ID của riêng bạn thay vì chia sẻ.
+- Extension chỉ xin quyền `calendar.events` (tạo / sửa sự kiện), không đọc email, danh bạ hay thứ gì khác.
+
+> ℹ️ Giao diện Google Cloud Console thay đổi thường xuyên; tên menu bên dưới có thể hơi khác (ví dụ mục *OAuth consent screen* nay nằm trong **Google Auth Platform**). Hãy bám theo ý nghĩa từng bước.
+
+### Bước 1 — Lấy Redirect URI của extension
+
+1. Load extension (xem phần Cài đặt).
+2. Mở ⚙️ **Settings** → mục **Google Calendar** → ô **Redirect URI**, có dạng:
+   `https://abcdefghijklmnopqrstuvwxyzabcdef.chromiumapp.org/`
+3. Bấm **Copy** (sẽ dùng ở Bước 5).
+
+> ⚠️ Phần `abcdef…` là **ID của extension**, phụ thuộc vào đường dẫn thư mục khi *Load unpacked*. Nếu bạn **di chuyển / đổi tên thư mục** hoặc cài lại ở chỗ khác, ID đổi → phải cập nhật lại Redirect URI trong Google Cloud (Bước 5).
+
+### Bước 2 — Tạo project trên Google Cloud
+
+1. Vào <https://console.cloud.google.com> và đăng nhập bằng tài khoản Google bạn dùng cho lịch.
+2. Bấm thanh chọn project ở đầu trang → **New project** → đặt tên (vd `TDTU Calendar`) → **Create**.
+3. Đảm bảo project vừa tạo đang được chọn.
+
+### Bước 3 — Bật Google Calendar API
+
+1. Menu ☰ → **APIs & Services** → **Library**.
+2. Tìm **Google Calendar API** → **Enable**.
+
+### Bước 4 — Cấu hình màn hình đồng ý (OAuth consent screen)
+
+1. Menu ☰ → **APIs & Services** → **OAuth consent screen** (hoặc **Google Auth Platform**).
+2. Nếu được hỏi, bấm **Get started** và điền:
+   - **App name**: tuỳ ý (vd `TDTU Schedule Exporter`)
+   - **User support email** và **Developer contact email**: email của bạn
+3. **Audience / User type**: chọn **External**.
+4. Ở mục **Test users** (Audience → Test users) → **Add users** → thêm **chính email Google bạn sẽ dùng để đồng bộ** → **Save**.
+   - Để app ở trạng thái **Testing** là được, **không cần** gửi xét duyệt (verification) vì chỉ bạn dùng.
+5. *(Nếu có mục Data access / Scopes)* thêm scope `https://www.googleapis.com/auth/calendar.events`. Nếu bỏ qua, Google vẫn hiện scope này lúc bạn đồng ý đăng nhập.
+
+### Bước 5 — Tạo OAuth Client ID
+
+1. **APIs & Services** → **Credentials** (hoặc **Google Auth Platform → Clients**) → **Create credentials / Create client** → **OAuth client ID**.
+2. **Application type**: chọn **Web application** (không chọn "Chrome extension").
+3. **Name**: tuỳ ý.
+4. **Authorized redirect URIs** → **Add URI** → dán Redirect URI đã copy ở Bước 1 (đúng từng ký tự, có dấu `/` ở cuối).
+5. **Create**. Google hiện hộp thoại chứa **Client ID** dạng `123456789-abcdefg.apps.googleusercontent.com` → copy lại.
+   *(Bỏ qua "Client secret", extension không dùng.)*
+
+> Một số tài khoản mất vài phút để cấu hình mới có hiệu lực. Nếu báo lỗi ngay, chờ 5 phút rồi thử lại.
+
+### Bước 6 — Dán Client ID vào extension
+
+⚙️ **Settings** → **Google Calendar** → dán vào ô **Google OAuth Client ID**. (Tự lưu.)
+
+### Bước 7 — (Khuyến nghị) Tạo lịch riêng cho TDTU
+
+Dùng lịch riêng giúp bạn xoá sạch lịch học khi hết học kỳ chỉ bằng một thao tác.
+
+1. Mở [calendar.google.com](https://calendar.google.com) trên máy tính.
+2. Cạnh **Other calendars** bấm **＋** → **Create new calendar** → đặt tên (vd `TDTU Schedule`) → **Create calendar**.
+3. Di chuột vào lịch vừa tạo → **⋮** → **Settings and sharing** → kéo xuống **Integrate calendar** → copy **Calendar ID** (dạng `abc123@group.calendar.google.com`).
+4. Dán vào ô **Calendar ID** trong Settings của extension.
+
+Để `primary` nếu muốn dùng lịch chính. Lịch phải thuộc tài khoản bạn đăng nhập (hoặc được chia sẻ với quyền chỉnh sửa).
+
+### Bước 8 — Đồng bộ lần đầu
+
+1. Mở trang thời khoá biểu → bấm **Lấy lịch học** → **🎨 Đồng bộ Google Calendar (có màu)**.
+2. Một cửa sổ đăng nhập Google hiện ra → chọn tài khoản đã thêm làm Test user.
+3. Google cảnh báo **"Google hasn't verified this app"** (vì đây là app của chính bạn) → **Advanced** → **Go to … (unsafe)** → **Continue / Allow**.
+4. Popup sẽ tự đóng khi cửa sổ đăng nhập mở. Đây là bình thường. Quá trình chạy nền; icon extension hiện ✓ khi xong, mở lại popup để xem kết quả (`Tạo mới N, cập nhật M sự kiện`).
+
+Chạy đồng bộ lại bất cứ lúc nào: sự kiện cũ được **cập nhật** (đổi phòng, giờ, màu…) thay vì tạo trùng.
+
+> ⚠️ Nếu trước đó đã import `.ics` vào cùng lịch, hãy **xoá các sự kiện cũ** đó (hoặc dùng lịch mới ở Bước 7) để khỏi bị trùng.
+> ⚠️ Môn / lớp bị ẩn **sau khi** đã đồng bộ sẽ **không tự biến mất** khỏi Google Calendar, bạn cần xoá thủ công.
+
+### 🛠️ Xử lý lỗi thường gặp
+
+| Lỗi | Nguyên nhân & cách xử lý |
+|---|---|
+| `Error 400: redirect_uri_mismatch` | Redirect URI trong Google Cloud khác với trong Settings. Copy lại từ Settings, dán đúng từng ký tự (kể cả `/` cuối). Nếu vừa di chuyển thư mục extension, ID đã đổi. |
+| `Error 403: access_denied` / "app has not completed verification" | Email đang đăng nhập chưa nằm trong **Test users** (Bước 4). |
+| `HTTP 403 – Google Calendar API has not been used…` | Chưa **Enable** Google Calendar API trong đúng project đã tạo Client ID (Bước 3). Đợi vài phút sau khi bật. |
+| `HTTP 404 – Not Found` | **Calendar ID** sai hoặc lịch không thuộc tài khoản này. Thử để `primary`. |
+| `HTTP 401` | Token hết hạn / bị từ chối, bấm đồng bộ lại để đăng nhập mới. |
+| `Chưa nhập Google Client ID` | Chưa dán Client ID vào Settings (Bước 6). |
+| `Không lấy được token đăng nhập Google` | Bạn đóng cửa sổ đăng nhập giữa chừng, hoặc loại Client ID không phải **Web application**. |
+| Sự kiện không có màu | Môn chưa có trong danh sách màu, đang dùng màu mặc định (Graphite). Thêm trong Settings. |
+| Mã `000000` / lớp tiếng Anh không xuất hiện | Nó nằm trong Blacklist mặc định, xoá dòng đó trong Settings nếu muốn xuất. |
+
+---
+
+## 🔒 Quyền riêng tư & bảo mật
+
+- Extension chạy **hoàn toàn trong trình duyệt của bạn**; không có server riêng, không thu thập hay gửi dữ liệu đi đâu ngoài **Google Calendar API** (khi bạn bấm đồng bộ).
+- Quyền (permissions) sử dụng:
+  - `activeTab`, `scripting` + trang `stdportal.tdtu.edu.vn`, `lichhoc-lichthi.tdtu.edu.vn`: đọc bảng thời khoá biểu bạn đang mở.
+  - `storage`: lưu Settings (màu, blacklist, Client ID, Calendar ID) trong `chrome.storage.local` của trình duyệt.
+  - `identity` + `https://www.googleapis.com/*`: đăng nhập Google và gọi Calendar API.
+- Scope OAuth: chỉ `https://www.googleapis.com/auth/calendar.events`.
+- Access token chỉ dùng trong lúc đồng bộ, **không được lưu lại**.
+- Lịch học **không được lưu cache**.
+- Thu hồi quyền bất cứ lúc nào tại <https://myaccount.google.com/permissions>.
+
+> 🙋 **Nếu bạn fork / đóng góp:** đừng commit file `.ics`, trang thời khoá biểu đã lưu (`.html`) hay ảnh chụp có chứa lịch học, tên, MSSV của bạn. `.gitignore` đã chặn sẵn các đuôi file phổ biến.
+
+---
+
+## 🗂️ Cấu trúc dự án
+
+```
+├── manifest.json     # Cấu hình extension (Manifest V3)
+├── popup.html / popup.js   # Giao diện popup + đọc lịch + xuất .ics/CSV
+├── options.html / options.js # Trang Settings
+├── background.js     # Service worker: đăng nhập Google + gọi Calendar API
+├── shared.js         # Hàm dùng chung: màu, mô tả sự kiện, blacklist
+├── config.js         # Giá trị mặc định (lần đầu cài)
+├── content.js        # Content script trên trang TDTU
+├── icons/            # Icon 16 / 48 / 128
+└── LICENSE
+```
+
+## 🧩 Hạn chế đã biết
+
+- Chỉ đọc **tuần đang hiển thị** trên trang.
+- Chỉ có **11 màu** của Google Calendar cho sự kiện.
+- Nếu TDTU đổi giao diện / cấu trúc trang, việc đọc lịch có thể cần cập nhật.
+- Chưa có tuỳ chọn nhắc lịch (reminder) riêng, dùng nhắc mặc định của lịch.
+
+## 🤝 Đóng góp
+
+Issue và Pull Request luôn được chào đón. Khi báo lỗi, hãy **che thông tin cá nhân** trong ảnh chụp / file đính kèm.
+
+## 📄 Giấy phép
+
+[MIT](LICENSE). Dựa trên [MinhQuan06/TDTU-extensions](https://github.com/MinhQuan06/TDTU-extensions).
+Dự án không liên kết hay được TDTU hoặc Google bảo trợ.

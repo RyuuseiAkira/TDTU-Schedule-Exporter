@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TDTU Schedule Exporter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3347;
+      --accent: #e85d26;
+      --accent2: #f4a261;
+      --text: #eef0f8;
+      --text-dim: #7b8099;
+      --success: #3ecf8e;
+      --error: #f87171;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 380px;
+      min-height: 200px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 13px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1a0a00 0%, #2d1200 50%, #1a0a00 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .header-text h1 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.3px;
+    }
+
+    .header-text p {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 1px;
+    }
+
+    .content {
+      padding: 14px;
+    }
+
+    /* Status banner */
+    .status-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      margin-bottom: 14px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-banner.idle {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+
+    .status-banner.loading {
+      background: rgba(232, 93, 38, 0.1);
+      border: 1px solid rgba(232, 93, 38, 0.3);
+      color: var(--accent2);
+    }
+
+    .status-banner.success {
+      background: rgba(62, 207, 142, 0.1);
+      border: 1px solid rgba(62, 207, 142, 0.3);
+      color: var(--success);
+    }
+
+    .status-banner.error {
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      color: var(--error);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot.pulse {
+      animation: pulse 1.2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* Schedule table */
+    .schedule-container {
+      display: none;
+      margin-bottom: 14px;
+    }
+
+    .schedule-container.visible { display: block; }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+
+    .class-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      cursor: default;
+      transition: border-color 0.15s;
+    }
+
+    .class-card:hover { border-color: var(--accent); }
+
+    .class-name {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .class-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10.5px;
+      padding: 2px 7px;
+      border-radius: 20px;
+      background: var(--surface2);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+
+    .badge.time { color: var(--accent2); border-color: rgba(244,162,97,0.25); }
+    .badge.room { color: #79c0ff; border-color: rgba(121,192,255,0.25); }
+    .badge.day  { color: var(--success); border-color: rgba(62,207,142,0.25); }
+
+    /* Action buttons */
+    .actions {
+      display: grid;
+      gap: 8px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 14px;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.15s;
+      width: 100%;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #c44a17);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #f06030, var(--accent));
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(232,93,38,0.35);
+    }
+
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--surface);
+      border-color: var(--accent);
+      color: var(--accent2);
+    }
+
+    .btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 12px 0;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 8px 14px 12px;
+      font-size: 10.5px;
+      color: var(--text-dim);
+    }
+
+    .footer a { color: var(--accent2); text-decoration: none; }
+
+    /* Spinner */
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(244,162,97,0.3);
+      border-top-color: var(--accent2);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Count badge */
+    .count-badge {
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-left: auto;
+    }
+
+    .not-on-portal {
+      text-align: center;
+      padding: 20px 16px;
+    }
+
+    .not-on-portal .icon { font-size: 32px; margin-bottom: 10px; }
+    .not-on-portal p { color: var(--text-dim); font-size: 12px; line-height: 1.6; }
+
+    .open-portal-btn {
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">🎓</div>
+  <div class="header-text">
+    <h1>TDTU Schedule Exporter</h1>
+    <p>Lịch học · Đại học Tôn Đức Thắng</p>
+  </div>
+  <button id="settingsBtn" title="Settings" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;width:32px;height:32px;font-size:16px;cursor:pointer">⚙️</button>
+</div>
+
+<div class="content">
+
+  <!-- Status -->
+  <div class="status-banner idle" id="statusBanner">
+    <div class="dot" id="statusDot" style="background: var(--text-dim)"></div>
+    <span id="statusText">Nhấn "Lấy lịch học" để bắt đầu</span>
+  </div>
+
+  <!-- Not on portal message -->
+  <div class="not-on-portal" id="notOnPortal" style="display:none">
+    <div class="icon">🏫</div>
+    <p>Bạn cần mở <strong>Cổng thông tin sinh viên TDTU</strong> và đăng nhập trước khi sử dụng.</p>
+    <button class="btn btn-primary open-portal-btn" id="openPortalBtn">
+      🔗 Mở Student Portal
+    </button>
+  </div>
+
+  <!-- Schedule list -->
+  <div class="schedule-container" id="scheduleContainer">
+    <div class="section-label" id="scheduleLabel">
+      Lịch học <span class="count-badge" id="countBadge">0</span>
+    </div>
+    <div id="classList"></div>
+    <div id="colorHint" style="display:none;font-size:11px;color:#fbbf24;line-height:1.5;margin-bottom:8px"></div>
+    <div class="divider"></div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="actions" id="actionButtons">
+    <button class="btn btn-primary" id="fetchBtn">
+      📅 Lấy lịch học
+    </button>
+    <div class="btn-group" id="exportBtns" style="display:none">
+      <button class="btn btn-secondary" id="exportICS">
+        📆 Xuất .ics
+      </button>
+      <button class="btn btn-secondary" id="exportExcel">
+        📊 Xuất Excel
+      </button>
+      <button class="btn btn-primary" id="syncGoogle" style="grid-column:1 / -1">
+        🎨 Đồng bộ Google Calendar (có màu)
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Hỗ trợ: <a href="https://stdportal.tdtu.edu.vn" target="_blank">stdportal.tdtu.edu.vn</a>
+</div>
+
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
