@@ -430,6 +430,16 @@ function generateICS(data) {
 // Chạy trong background.js vì popup sẽ tự đóng khi cửa sổ đăng nhập Google mở ra.
 const syncGoogleBtn = document.getElementById('syncGoogle');
 
+// Khoảng tuần (Thứ 2 → Thứ 2 kế tiếp, 'YYYY-MM-DD') phủ toàn bộ lớp đã đọc,
+// KỂ CẢ lớp bị ẩn — để dọn được các sự kiện cũ của lớp vừa bị ẩn / báo vắng
+function weekRange(all) {
+  var t = all.map(function(c) { return classBaseDate(c).getTime(); });
+  var lo = new Date(Math.min.apply(null, t)), hi = new Date(Math.max.apply(null, t));
+  lo.setDate(lo.getDate() - ((lo.getDay() + 6) % 7));        // về Thứ 2
+  hi.setDate(hi.getDate() - ((hi.getDay() + 6) % 7) + 7);    // Thứ 2 tuần kế tiếp
+  return { from: localDateTime(lo, '00:00').slice(0, 10), to: localDateTime(hi, '00:00').slice(0, 10) };
+}
+
 function buildGoogleEvents(data) {
   return data.map(function(cls) {
     var base = classBaseDate(cls);
@@ -452,7 +462,7 @@ function buildGoogleEvents(data) {
 }
 
 syncGoogleBtn.addEventListener('click', function() {
-  if (!visibleData().length) return;
+  if (!scheduleData.length) return;
   if (!SETTINGS.clientId) {
     setStatus('error', 'Chưa nhập Google Client ID — bấm ⚙️ để mở Settings');
     return;
@@ -460,7 +470,8 @@ syncGoogleBtn.addEventListener('click', function() {
   setStatus('loading', 'Đang mở đăng nhập Google... (nếu popup đóng, mở lại để xem kết quả)');
   chrome.runtime.sendMessage({
     type: 'syncGoogle',
-    events: buildGoogleEvents(visibleData())
+    events: buildGoogleEvents(visibleData()),
+    range: weekRange(scheduleData)
   });
   // Không chờ phản hồi: tiến trình/kết quả được lưu ở chrome.storage (syncStatus)
 });

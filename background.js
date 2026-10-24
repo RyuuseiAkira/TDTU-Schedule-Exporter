@@ -8,7 +8,7 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'keepAlive') { sendResponse({ ok: true }); return true; }
   if (message.type === 'syncGoogle') {
-    syncToGoogle(message.events).catch(err => setSync('error', 'Lỗi: ' + err.message, true));
+    syncToGoogle(message.events, message.range).catch(err => setSync('error', 'Lỗi: ' + err.message, true));
     sendResponse({ started: true });
     return true;
   }
@@ -54,21 +54,48 @@ async function api(token, method, path, body) {
     err.status = res.status;
     throw err;
   }
+  if (res.status === 204) return null;   // DELETE thành công, không có nội dung
   return res.json();
 }
 
-async function syncToGoogle(events) {
+// Xoá các sự kiện DO EXTENSION TẠO (id bắt đầu bằng 'tdtu') trong khoảng tuần
+// mà không còn nằm trong danh sách mới (lớp báo vắng / blacklist / đổi giờ).
+// Sự kiện bạn tự tạo hoặc import từ .ics (id khác) không bao giờ bị đụng tới.
+async function cleanupStale(token, keepIds, range) {
+  let deleted = 0, pageToken = '';
+  do {
+    const q = new URLSearchParams({
+      timeMin: range.from + 'T00:00:00+07:00',
+      timeMax: range.to + 'T00:00:00+07:00',
+      singleEvents: 'true', maxResults: '250', fields: 'items(id),nextPageToken'
+    });
+    if (pageToken) q.set('pageToken', pageToken);
+    const res = await api(token, 'GET', '?' + q.toString());
+    for (const ev of (res.items || [])) {
+      if (!ev.id || !ev.id.startsWith('tdtu') || keepIds.has(ev.id)) continue;
+      try { await api(token, 'DELETE', '/' + ev.id); deleted++; }
+      catch (err) { if (err.status !== 404 && err.status !== 410) throw err; }
+    }
+    pageToken = res.nextPageToken || '';
+  } while (pageToken);
+  return deleted;
+}
+
+async function syncToGoogle(events, range) {
   await loadSettings();
   if (!SETTINGS.clientId) throw new Error('Chưa nhập Google Client ID — mở ⚙️ Settings');
-  if (!events || !events.length) throw new Error('Không có sự kiện để đồng bộ');
+  events = events || [];
+  if (!events.length && !range) throw new Error('Không có sự kiện để đồng bộ');
 
   setSync('running', 'Đang đăng nhập Google...');
   const token = await getToken();
 
-  let created = 0, updated = 0;
+  let created = 0, updated = 0, deleted = 0;
+  const keepIds = new Set();
   for (let i = 0; i < events.length; i++) {
     setSync('running', 'Đang đồng bộ ' + (i + 1) + '/' + events.length + '...');
     const id = await eventId(events[i].key);
+    keepIds.add(id);
     const body = Object.assign({ id }, events[i].body);
     try {
       await api(token, 'POST', '', body);
@@ -81,5 +108,9 @@ async function syncToGoogle(events) {
       updated++;
     }
   }
-  setSync('done', 'Xong ✓ Tạo mới ' + created + ', cập nhật ' + updated + ' sự kiện', true);
+  if (range) {
+    setSync('running', 'Đang dọn sự kiện cũ...');
+    deleted = await cleanupStale(token, keepIds, range);
+  }
+  setSync('done', 'Xong ✓ Tạo mới ' + created + ', cập nhật ' + updated + ', xoá ' + deleted + ' sự kiện', true);
 }

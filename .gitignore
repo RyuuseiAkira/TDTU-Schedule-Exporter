@@ -1,0 +1,12 @@
+*.ics
+*.csv
+*.xlsx
+Thời_khóa_biểu*.html
+*.zip
+
+
+.DS_Store
+Thumbs.db
+node_modules/
+.vscode/
+.idea/
