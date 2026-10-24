@@ -1,6 +1,6 @@
 # 🎓 TDTU Schedule Exporter
 
-**English** · [Tiếng Việt](README.md)
+**English** · [Tiếng Việt](README.vn.md)
 
 A Chrome / Edge extension that reads your **timetable** from the Ton Duc Thang University (TDTU) schedule page and lets you:
 
