@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TDTU Schedule Exporter",
-  "version": "1.4.0",
+  "version": "1.7.1",
   "description": "Tải lịch học từ Cổng thông tin sinh viên TDTU về dạng ICS hoặc Excel",
   "icons": {
     "16": "icons/icon16.png",
@@ -27,22 +27,15 @@
     "https://lichhoc-lichthi.tdtu.edu.vn/*",
     "https://www.googleapis.com/*"
   ],
-  "content_scripts": [
-    {
-      "matches": [
-        "https://stdportal.tdtu.edu.vn/*",
-        "https://lichhoc-lichthi.tdtu.edu.vn/*"
-      ],
-      "js": [
-        "content.js"
-      ]
-    }
-  ],
   "background": {
     "service_worker": "background.js"
   },
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
+  },
+  "minimum_chrome_version": "105",
+  "content_security_policy": {
+    "extension_pages": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://www.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'"
   }
 }

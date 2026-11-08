@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>TDTU Schedule Exporter</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0f1117;
@@ -28,7 +26,7 @@
       min-height: 200px;
       background: var(--bg);
       color: var(--text);
-      font-family: 'Be Vietnam Pro', sans-serif;
+      font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
       font-size: 13px;
     }
 
@@ -196,7 +194,7 @@
       border-radius: var(--radius);
       border: none;
       cursor: pointer;
-      font-family: 'Be Vietnam Pro', sans-serif;
+      font-family: 'Be Vietnam Pro', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
       font-size: 13px;
       font-weight: 600;
       transition: all 0.15s;
@@ -276,6 +274,21 @@
       margin-left: auto;
     }
 
+    /* Trạng thái đồng bộ nằm ngay dưới nút */
+    .sync-status {
+      grid-column: 1 / -1;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: var(--radius);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .sync-status.running { background: rgba(232,93,38,.1);  border: 1px solid rgba(232,93,38,.3);  color: var(--accent2); }
+    .sync-status.done    { background: rgba(62,207,142,.1); border: 1px solid rgba(62,207,142,.3); color: var(--success); }
+    .sync-status.error   { background: rgba(248,113,113,.1);border: 1px solid rgba(248,113,113,.3);color: var(--error); }
+
     .not-on-portal {
       text-align: center;
       padding: 20px 16px;
@@ -322,6 +335,7 @@
     <div class="section-label" id="scheduleLabel">
       Lịch học <span class="count-badge" id="countBadge">0</span>
     </div>
+    <div id="overlapWarn" style="display:none;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.35);color:var(--error);border-radius:var(--radius);padding:8px 10px;font-size:11.5px;line-height:1.45;margin-bottom:8px"></div>
     <div id="classList"></div>
     <div id="colorHint" style="display:none;font-size:11px;color:#fbbf24;line-height:1.5;margin-bottom:8px"></div>
     <div class="divider"></div>
@@ -342,6 +356,7 @@
       <button class="btn btn-primary" id="syncGoogle" style="grid-column:1 / -1">
         🎨 Đồng bộ Google Calendar (có màu)
       </button>
+      <div id="syncStatus" class="sync-status" style="display:none"></div>
     </div>
   </div>
 

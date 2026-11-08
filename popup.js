@@ -2,14 +2,19 @@
 // Properly handles rowspan in weekly calendar grid
 
 let scheduleData = [];
+let lastOverlapCount = 0;
 // Dữ liệu sau khi loại các môn trong blacklist (dùng cho hiển thị + xuất + đồng bộ)
 function visibleData() { return scheduleData.filter(function(c) { return !isExcluded(c); }); }
 
 const PORTAL_URL   = 'https://stdportal.tdtu.edu.vn';
 const SCHEDULE_URL = 'https://lichhoc-lichthi.tdtu.edu.vn';
 
-function isOnPortal(url)   { return url && url.startsWith(PORTAL_URL); }
-function isOnSchedule(url) { return url && url.startsWith(SCHEDULE_URL); }
+// So khớp CHÍNH XÁC tên miền (startsWith có thể bị giả: tdtu.edu.vn.evil.com)
+function hostOf(url) {
+  try { var u = new URL(url); return u.protocol === 'https:' ? u.hostname : ''; } catch (e) { return ''; }
+}
+function isOnPortal(url)   { return hostOf(url) === 'stdportal.tdtu.edu.vn'; }
+function isOnSchedule(url) { return hostOf(url) === 'lichhoc-lichthi.tdtu.edu.vn'; }
 function isOnTDTU(url)     { return isOnPortal(url) || isOnSchedule(url); }
 
 // ─── TDTU official period times ───────────────────────────────────────────────
@@ -45,7 +50,7 @@ function setStatus(type, msg) {
 }
 
 openPortalBtn.addEventListener('click', () => {
-  chrome.tabs.create({ url: PORTAL_URL });
+  ext.tabs.create({ url: PORTAL_URL });
   window.close();
 });
 
@@ -64,7 +69,7 @@ function hideGuideMessage() {
 }
 
 fetchBtn.addEventListener('click', async () => {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const [tab] = await ext.tabs.query({ active: true, currentWindow: true });
   const url = tab ? tab.url : '';
 
   if (!isOnTDTU(url)) {
@@ -84,14 +89,17 @@ fetchBtn.addEventListener('click', async () => {
   fetchBtn.disabled = true;
   fetchBtn.innerHTML = '<div class="spinner"></div> Đang lấy lịch...';
   setStatus('loading', 'Đang đọc lịch theo tuần...');
+  syncStatusEl.style.display = 'none';
 
   try {
-    const result = await chrome.scripting.executeScript({
+    const result = await ext.scripting.executeScript({
       target: { tabId: tab.id },
       func: scrapeWeeklyCalendar
     });
 
-    const data = result[0] && result[0].result;
+    // Dữ liệu đến từ trang web → không tin cậy: kiểm tra kiểu / độ dài / khoảng giá trị
+    const rawData = result[0] && result[0].result;
+    const data = Array.isArray(rawData) ? rawData.slice(0, 200).map(sanitizeClass).filter(Boolean) : [];
 
     if (!data || data.length === 0) {
       setStatus('error', 'Không tìm thấy dữ liệu. Trang có thể chưa load xong — thử lại.');
@@ -102,7 +110,8 @@ fetchBtn.addEventListener('click', async () => {
 
     scheduleData = data;
     renderSchedule(data);
-    setStatus('success', 'Đã tải ' + visibleData().length + ' môn học thành công ✓');
+    setStatus(lastOverlapCount ? 'error' : 'success',
+      'Đã tải ' + visibleData().length + ' lớp' + (lastOverlapCount ? ' — ⛔ có ' + lastOverlapCount + ' cặp trùng lịch' : ' thành công ✓'));
     fetchBtn.innerHTML = '🔄 Tải lại';
     fetchBtn.disabled = false;
     exportBtns.style.display = 'grid';
@@ -127,7 +136,7 @@ async function addMissingToSettings(data) {
     SETTINGS.subjectNames[c.code] = c.name;
     n++;
   });
-  await chrome.storage.local.set({ settings: SETTINGS });
+  await ext.storage.local.set({ settings: SETTINGS });
 }
 
 function renderSchedule(all) {
@@ -143,6 +152,25 @@ function renderSchedule(all) {
   }
   hb.textContent = hidden ? '🚫 Đã ẩn ' + hidden + ' lớp (blacklist / GV báo vắng — chỉnh trong ⚙️ Settings)' : '';
   const days = ['CN','Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'];
+
+  // Cảnh báo trùng lịch (chỉ tính các lớp đang hiển thị; chỉ cảnh báo, vẫn xuất cả hai)
+  const overlaps = findOverlaps(data);
+  const clashing = new Set();
+  overlaps.forEach(function(o) { clashing.add(o.a); clashing.add(o.b); });
+  const warn = document.getElementById('overlapWarn');
+  if (overlaps.length) {
+    warn.style.display = 'block';
+    warn.textContent = '';
+    warn.appendChild(h('b', { text: '⛔ Phát hiện ' + overlaps.length + ' cặp lớp trùng lịch' }));
+    warn.appendChild(document.createTextNode(' (vẫn được xuất / đồng bộ cả hai):'));
+    overlaps.forEach(function(o) {
+      var d = o.a.exactDate ? new Date(o.a.exactDate) : null;
+      var when = (days[o.a.dayOfWeek] || '') + (d ? ' ' + String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') : '');
+      warn.appendChild(h('div', { style: 'margin-top:4px',
+        text: '• ' + when + ' · tiết ' + o.from + '–' + o.to + ': ' + o.a.name + ' ↔ ' + o.b.name }));
+    });
+  } else { warn.style.display = 'none'; warn.textContent = ''; }
+  lastOverlapCount = overlaps.length;
   const missing = {};
   data.forEach(function(cls) { if (!colorForClass(cls).assigned) missing[cls.code || '(không có mã)'] = cls.name; });
   const missKeys = Object.keys(missing);
@@ -165,21 +193,34 @@ function renderSchedule(all) {
     card.className = 'class-card';
     var col = colorForClass(cls);
     card.style.borderLeft = '4px solid ' + col.hex;
-    card.innerHTML =
-      '<div class="class-name">' + escHtml(cls.name) + '</div>' +
-      '<div class="class-meta">' +
-        '<span class="badge day">📆 ' + (days[cls.dayOfWeek] || 'N/A') + '</span>' +
-        '<span class="badge time">⏰ ' + pt.s + '–' + pte.e + ' (Tiết ' + cls.periodStart + '–' + cls.periodEnd + ')</span>' +
-        (cls.room  ? '<span class="badge room">📍 ' + escHtml(cls.room)  + '</span>' : '') +
-        (cls.group ? '<span class="badge" style="color:#67e8f9;border-color:rgba(103,232,249,.25)">👥 ' + escHtml(cls.group) + '</span>' : '') +
-        (cls.note  ? '<span class="badge" style="color:#fbbf24;border-color:rgba(251,191,36,.25)">⚠️ ' + escHtml(cls.note)  + '</span>' : '') +
-      '</div>';
+    var badge = function(kind, text, style) { return h('span', { 'class': 'badge' + (kind ? ' ' + kind : ''), style: style || '', text: text }); };
+    var meta = h('div', { 'class': 'class-meta' });
+    meta.appendChild(badge('day',  '📆 ' + (days[cls.dayOfWeek] || 'N/A')));
+    meta.appendChild(badge('time', '⏰ ' + pt.s + '–' + pte.e + ' (Tiết ' + cls.periodStart + '–' + cls.periodEnd + ')'));
+    if (cls.room)  meta.appendChild(badge('room', '📍 ' + cls.room));
+    if (cls.group) meta.appendChild(badge('', '👥 ' + cls.group, 'color:#67e8f9;border-color:rgba(103,232,249,.25)'));
+    if (cls.note)  meta.appendChild(badge('', '⚠️ ' + cls.note, 'color:#fbbf24;border-color:rgba(251,191,36,.25)'));
+    if (clashing.has(cls)) meta.appendChild(badge('', '⛔ Trùng lịch', 'color:#f87171;border-color:rgba(248,113,113,.4);background:rgba(248,113,113,.1)'));
+    card.appendChild(h('div', { 'class': 'class-name', text: cls.name }));
+    card.appendChild(meta);
     classList.appendChild(card);
   });
 }
 
+// Dựng phần tử DOM an toàn: văn bản luôn đi qua textContent, không dùng innerHTML
+function h(tag, attrs, children) {
+  var e = document.createElement(tag);
+  Object.keys(attrs || {}).forEach(function(k) {
+    if (k === 'text') e.textContent = attrs[k];
+    else if (k === 'style') e.style.cssText = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  });
+  (children || []).forEach(function(c) { e.appendChild(c); });
+  return e;
+}
+
 function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -279,8 +320,17 @@ function scrapeWeeklyCalendar() {
   }
 
   // ── 5. Parse a class cell text ─────────────────────────────────────────────
-  function parseClassCell(text, dayOfWeek, periodStart, rowspan) {
-    text = text.replace(/\s+/g, ' ').trim();
+  // Text của 1 khối lớp; <br> → xuống dòng (để tên phòng không dính chữ phía sau)
+  function blockText(el) {
+    var c = el.cloneNode(true);
+    var brs = c.querySelectorAll('br');
+    for (var b = 0; b < brs.length; b++) brs[b].replaceWith('\n');
+    return c.textContent;
+  }
+
+  function parseClassCell(rawText, dayOfWeek, periodStart, rowspan) {
+    var raw = rawText;
+    var text = rawText.replace(/\s+/g, ' ').trim();
     if (!text || text.length < 3) return null;
 
     // Skip pure period-number cells (col 0)
@@ -290,7 +340,7 @@ function scrapeWeeklyCalendar() {
     var parts = text.split('|');
     var namePart = parts[0].trim();
     // Remove trailing code pattern like "(501044..."
-    namePart = namePart.replace(/\s*\(\d{5,7}.*/, '').trim();
+    namePart = namePart.replace(/\s*\([A-Za-z0-9]{5,8}\s*[-–].*/, '').trim();
     if (!namePart || namePart.length < 2) return null;
 
     // English name (after first |, before next | or "(")
@@ -299,15 +349,17 @@ function scrapeWeeklyCalendar() {
       engName = parts[1].replace(/\(.*/, '').trim();
     }
 
-    // Code: 5-7 digit number in parentheses
-    var codeM = text.match(/\((\d{5,7})\s*[-–]/);
+    // Code: 5-8 ký tự chữ/số trong ngoặc, vd (501042 - Nhóm…) hoặc (TTSH01 - Nhóm…)
+    var codeM = text.match(/\(([A-Za-z0-9]{5,8})\s*[-–]/);
     var code = codeM ? codeM[1] : '';
 
-    // Room
-    // (lookahead GV: ghi chú "GV báo vắng" có thể dính liền sau tên phòng)
-    var roomM = text.match(/Ph[oò]ng\|Room:\s*([^\s|)]+?)(?=GV|\s|\||\)|$)/i)
-             || text.match(/Room:\s*([^\s|)]+?)(?=GV|\s|\||\)|$)/i);
-    var room = roomM ? roomM[1].trim() : '';
+    // Room: lấy đến hết dòng (vd "HOCTRUCTUYEN - 2"), không bị dính "GV báo vắng"
+    var roomM = raw.match(/Room:[ \t]*([^\n\r|]+)/i);
+    var room = roomM ? roomM[1].replace(/\s*GV\s.*$/i, '').trim() : '';
+    if (!room) {
+      var roomM2 = text.match(/Room:\s*([^\s|)]+?)(?=GV|\s|\||\)|$)/i);
+      room = roomM2 ? roomM2[1].trim() : '';
+    }
 
     // Group (Nhóm) + Sub-group (Tổ)
     var nhomM = text.match(/Nh[oó]m\|Groups:\s*(\d+)/i);
@@ -355,9 +407,15 @@ function scrapeWeeklyCalendar() {
       if (!cell3.isOrigin) continue; // occupied by rowspan from above → SKIP
 
       var exactDate = colDate[c3] ? colDate[c3].getTime() : null;
-      var parsed = parseClassCell(cell3.text, day, period, cell3.rowspan);
-      if (parsed) parsed.exactDate = exactDate;
-      if (parsed) results.push(parsed);
+
+      // Trùng giờ: trang đặt nhiều lớp cạnh nhau trong cùng 1 ô (bảng lồng bên trong)
+      // → tách từng khối thành một lớp riêng
+      var subs = cell3.element.querySelectorAll('table td');
+      var blocks = subs.length > 1 ? Array.prototype.slice.call(subs) : [cell3.element];
+      for (var bi = 0; bi < blocks.length; bi++) {
+        var parsed = parseClassCell(blockText(blocks[bi]), day, period, cell3.rowspan);
+        if (parsed) { parsed.exactDate = exactDate; results.push(parsed); }
+      }
     }
   }
 
@@ -370,6 +428,23 @@ exportICS.addEventListener('click', function() {
   downloadFile('tdtu-lichhoc.ics', generateICS(visibleData()), 'text/calendar;charset=utf-8');
   setStatus('success', 'Đã xuất .ics — import vào Google Calendar nhé!');
 });
+
+// RFC 5545: escape ký tự đặc biệt trong TEXT + gấp dòng ≤ 75 byte (không cắt ngang ký tự UTF-8)
+function icsEscape(s) {
+  return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r\n|\r|\n/g,'\\n');
+}
+function icsFold(line) {
+  var enc = new TextEncoder();
+  if (enc.encode(line).length <= 75) return line;
+  var out = [], cur = '', curLen = 0;
+  for (const ch of line) {
+    var l = enc.encode(ch).length;
+    if (curLen + l > 75) { out.push(cur); cur = ' ' + ch; curLen = 1 + l; }
+    else { cur += ch; curLen += l; }
+  }
+  out.push(cur);
+  return out.join('\r\n');
+}
 
 function generateICS(data) {
   var PT = {
@@ -412,10 +487,10 @@ function generateICS(data) {
       'UID:tdtu-'+i+'-'+Date.now()+'@tdtu.edu.vn',
       'DTSTART;TZID=Asia/Ho_Chi_Minh:'+fmtDT(base,ts),
       'DTEND;TZID=Asia/Ho_Chi_Minh:'+fmtDT(base,te),
-      'SUMMARY:'+cls.name
+      'SUMMARY:'+icsEscape(cls.name)
     );
-    if (cls.room) lines.push('LOCATION:'+cls.room);
-    if (desc)     lines.push('DESCRIPTION:'+desc);
+    if (cls.room) lines.push('LOCATION:'+icsEscape(cls.room));
+    if (desc)     lines.push('DESCRIPTION:'+icsEscape(desc));
     // Google Calendar bỏ qua COLOR khi import .ics (chỉ app khác dùng);
     // muốn có màu trên Google → dùng nút "Đồng bộ Google Calendar".
     lines.push('COLOR:'+col.css);
@@ -423,7 +498,7 @@ function generateICS(data) {
   });
 
   lines.push('END:VCALENDAR');
-  return lines.join('\r\n');
+  return lines.map(icsFold).join('\r\n');
 }
 
 // ─── Đồng bộ Google Calendar (có màu) ─────────────────────────────────────────
@@ -461,26 +536,50 @@ function buildGoogleEvents(data) {
   });
 }
 
+// Trạng thái đồng bộ hiện NGAY DƯỚI nút (không phải ở đầu popup, nơi dễ bị cuộn mất)
+const syncStatusEl = document.getElementById('syncStatus');
+const syncLabel = syncGoogleBtn.textContent.trim();
+
+function setSyncUI(state, msg) { // state: running | done | error
+  syncStatusEl.className = 'sync-status ' + state;
+  syncStatusEl.textContent = '';
+  syncStatusEl.appendChild(state === 'running' ? h('div', { 'class': 'spinner' }) : h('span', { text: state === 'done' ? '✅' : '❌' }));
+  syncStatusEl.appendChild(h('span', { 'class': 'msg', text: msg }));
+  syncStatusEl.style.display = 'flex';
+  syncGoogleBtn.disabled = state === 'running';
+  syncGoogleBtn.textContent = '';
+  if (state === 'running') {
+    syncGoogleBtn.appendChild(h('div', { 'class': 'spinner' }));
+    syncGoogleBtn.appendChild(document.createTextNode(' Đang đồng bộ...'));
+  } else {
+    syncGoogleBtn.textContent = syncLabel;
+  }
+  syncStatusEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
 syncGoogleBtn.addEventListener('click', function() {
   if (!scheduleData.length) return;
   if (!SETTINGS.clientId) {
-    setStatus('error', 'Chưa nhập Google Client ID — bấm ⚙️ để mở Settings');
+    setSyncUI('error', 'Chưa nhập Google Client ID — bấm ⚙️ để mở Settings');
     return;
   }
-  setStatus('loading', 'Đang mở đăng nhập Google... (nếu popup đóng, mở lại để xem kết quả)');
-  chrome.runtime.sendMessage({
+  setSyncUI('running', 'Đang mở cửa sổ đăng nhập Google...');
+  Promise.resolve(ext.runtime.sendMessage({
     type: 'syncGoogle',
     events: buildGoogleEvents(visibleData()),
     range: weekRange(scheduleData)
-  });
-  // Không chờ phản hồi: tiến trình/kết quả được lưu ở chrome.storage (syncStatus)
+  })).catch(function() {});
+  // Không chờ phản hồi: tiến trình/kết quả được background ghi vào chrome.storage (syncStatus)
 });
 
 function showSyncStatus(s) {
   if (!s) return;
-  setStatus(s.state === 'running' ? 'loading' : s.state === 'done' ? 'success' : 'error', s.msg);
+  // Bỏ qua trạng thái "đang chạy" quá cũ (service worker có thể đã bị tắt giữa chừng)
+  if (s.state === 'running' && Date.now() - s.ts > 5 * 60 * 1000) return;
+  if (exportBtns.style.display !== 'none') setSyncUI(s.state, s.msg);          // đã có danh sách → hiện dưới nút
+  else setStatus(s.state === 'running' ? 'loading' : s.state === 'done' ? 'success' : 'error', s.msg);
 }
-chrome.storage.onChanged.addListener(function(ch, area) {
+ext.storage.onChanged.addListener(function(ch, area) {
   if (area !== 'local') return;
   if (ch.syncStatus) showSyncStatus(ch.syncStatus.newValue);
   if (ch.settings) loadSettings().then(function() { if (scheduleData.length) renderSchedule(scheduleData); });
@@ -492,6 +591,13 @@ exportExcel.addEventListener('click', function() {
   downloadFile('tdtu-lichhoc.csv', '\uFEFF'+generateCSV(visibleData()), 'text/csv;charset=utf-8');
   setStatus('success', 'Đã xuất CSV — mở bằng Excel nhé!');
 });
+
+// Chống "CSV / formula injection": ô bắt đầu bằng = + - @ (hoặc tab / CR) bị Excel hiểu là công thức
+function csvCell(v) {
+  var s = String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return '"' + s.replace(/"/g, '""') + '"';
+}
 
 function generateCSV(data) {
   var days = ['Chủ nhật','Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'];
@@ -510,28 +616,30 @@ function generateCSV(data) {
     ]);
   });
   return rows.map(function(r){
-    return r.map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(',');
+    return r.map(csvCell).join(',');
   }).join('\n');
 }
 
 function downloadFile(name, content, mime) {
   var url = URL.createObjectURL(new Blob([content],{type:mime}));
-  var a = document.createElement('a'); a.href=url; a.download=name; a.click();
-  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  var a = document.createElement('a'); a.href=url; a.download=name;
+  document.body.appendChild(a);            // Firefox yêu cầu thẻ <a> nằm trong DOM
+  a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 (async function() {
   await loadSettings();
   document.getElementById('settingsBtn').addEventListener('click', function() {
-    chrome.runtime.openOptionsPage();
+    ext.runtime.openOptionsPage();
   });
-  var tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  var tabs = await ext.tabs.query({ active: true, currentWindow: true });
   var url = tabs[0] ? tabs[0].url : '';
   if      (isOnSchedule(url)) setStatus('idle', 'Sẵn sàng — nhấn để tải lịch học');
   else if (isOnPortal(url))   setStatus('idle', 'Vào mục Thời khoá biểu, rồi nhấn lấy lịch');
   else                        setStatus('idle', 'Mở trang lịch học TDTU trước');
 
   // Không lưu cache lịch học: xoá bản cache cũ (nếu còn từ phiên bản trước)
-  chrome.storage.local.remove('scheduleData');
+  ext.storage.local.remove('scheduleData');
 })();

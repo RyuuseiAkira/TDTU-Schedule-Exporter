@@ -1,5 +1,9 @@
 // shared.js — helper dùng chung (màu, mô tả, thời gian). Thường không cần sửa.
 
+// Tương thích Chrome / Edge / Firefox: Firefox dùng `browser.*` (trả về Promise),
+// Chrome dùng `chrome.*` (MV3 cũng trả về Promise). Toàn bộ code dùng `ext.*`.
+const ext = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;
+
 // 11 màu sự kiện cố định của Google Calendar: tên → { id, hex, css }
 // (css = tên màu CSS gần nhất, dùng cho thuộc tính COLOR trong .ics cho app khác)
 const GOOGLE_COLORS = {
@@ -25,17 +29,76 @@ function lookupColor(value) {
 }
 
 // ─── Settings (lưu ở chrome.storage.local, mặc định lấy từ config.js) ───────
+// ─── Làm sạch dữ liệu (dữ liệu từ trang web / storage đều không được tin cậy) ───
+const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+const isPlainObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+// Chuỗi: bỏ ký tự điều khiển (kể cả xuống dòng), gộp khoảng trắng, giới hạn độ dài
+function cleanStr(v, max) {
+  return String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+}
+function cleanInt(v, lo, hi) {
+  const n = Math.trunc(Number(v));
+  return Number.isFinite(n) && n >= lo && n <= hi ? n : null;
+}
+
+// Lớp học đọc từ trang TDTU → chỉ giữ các trường hợp lệ; sai định dạng thì bỏ (null)
+function sanitizeClass(c) {
+  if (!isPlainObj(c)) return null;
+  const name = cleanStr(c.name, 200);
+  const ps = cleanInt(c.periodStart, 1, 16), pe = cleanInt(c.periodEnd, 1, 16), dow = cleanInt(c.dayOfWeek, 0, 6);
+  if (!name || ps === null || pe === null || dow === null || pe < ps) return null;
+  let ex = c.exactDate == null ? null : Number(c.exactDate);
+  if (ex !== null && !(Number.isFinite(ex) && ex > 946684800000 && ex < 4102444800000)) ex = null; // năm 2000–2100
+  return {
+    name, engName: cleanStr(c.engName, 200), code: cleanStr(c.code, 16), room: cleanStr(c.room, 100),
+    group: cleanStr(c.group, 60), note: cleanStr(c.note, 100),
+    dayOfWeek: dow, periodStart: ps, periodEnd: pe, exactDate: ex, absent: c.absent === true
+  };
+}
+
+// Settings đọc từ chrome.storage → ép về đúng kiểu, thiếu / sai thì dùng mặc định
+function sanitizeSettings(raw) {
+  const out = JSON.parse(JSON.stringify(DEFAULTS));
+  if (!isPlainObj(raw)) return out;
+  if (isPlainObj(raw.subjectColors)) {
+    out.subjectColors = {};
+    Object.keys(raw.subjectColors).slice(0, 200).forEach(function(k) {
+      const code = cleanStr(k, 16);
+      if (code && lookupColor(raw.subjectColors[k])) out.subjectColors[code] = String(raw.subjectColors[k]).toLowerCase();
+    });
+  }
+  if (isPlainObj(raw.subjectNames)) {
+    out.subjectNames = {};
+    Object.keys(raw.subjectNames).slice(0, 200).forEach(function(k) {
+      const code = cleanStr(k, 16), n = cleanStr(raw.subjectNames[k], 100);
+      if (code && n) out.subjectNames[code] = n;
+    });
+  }
+  if (Array.isArray(raw.blacklist)) {
+    out.blacklist = raw.blacklist.slice(0, 100).filter(isPlainObj)
+      .map(b => ({ match: cleanStr(b.match, 100), name: cleanStr(b.name, 100) }))
+      .filter(b => b.match);
+  }
+  if (typeof raw.ignoreAbsent === 'boolean') out.ignoreAbsent = raw.ignoreAbsent;
+  if (lookupColor(raw.defaultColor)) out.defaultColor = String(raw.defaultColor).toLowerCase();
+  if (typeof raw.clientId === 'string') out.clientId = cleanStr(raw.clientId, 120);
+  if (typeof raw.calendarId === 'string') out.calendarId = cleanStr(raw.calendarId, 255) || 'primary';
+  return out;
+}
+
+// ─── Settings (lưu ở chrome.storage.local, mặc định lấy từ config.js) ───────
 let SETTINGS = JSON.parse(JSON.stringify(DEFAULTS));
 async function loadSettings() {
-  const r = await chrome.storage.local.get('settings');
-  SETTINGS = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), r.settings || {});
+  const r = await ext.storage.local.get('settings');
+  SETTINGS = sanitizeSettings(r.settings);
   return SETTINGS;
 }
 
 // Màu của 1 lớp theo mã môn. Trả về { id, hex, css, assigned }
 function colorForClass(cls) {
   const code = String(cls.code || '').trim();
-  const own = SETTINGS.subjectColors[code];
+  const own = hasOwn(SETTINGS.subjectColors, code) ? SETTINGS.subjectColors[code] : undefined;
   const found = own !== undefined ? lookupColor(own) : null;
   if (found) return Object.assign({ assigned: true }, found);
   const def = lookupColor(SETTINGS.defaultColor) || GOOGLE_COLORS.graphite;
@@ -76,11 +139,28 @@ function isBlacklisted(cls) {
   return (SETTINGS.blacklist || []).some(function(b) {
     const m = String(b && b.match || '').trim().toLowerCase();
     if (!m) return false;
-    return /^\d+$/.test(m) ? m === code : name.indexOf(m) >= 0;
+    return m === code.toLowerCase() || (!/^\d+$/.test(m) && name.indexOf(m) >= 0);
   });
 }
 
 // Lớp bị loại: nằm trong blacklist, hoặc GV báo vắng (khi bật "bỏ qua GV báo vắng")
 function isExcluded(cls) {
   return isBlacklisted(cls) || (SETTINGS.ignoreAbsent && !!cls.absent);
+}
+
+// Tìm các cặp lớp trùng giờ (cùng ngày, khoảng tiết giao nhau).
+// Trả về [{ a, b, from, to }] — from/to là khoảng tiết bị trùng.
+function findOverlaps(list) {
+  const out = [];
+  for (let i = 0; i < list.length; i++) {
+    for (let j = i + 1; j < list.length; j++) {
+      const a = list[i], b = list[j];
+      const sameDay = (a.exactDate && b.exactDate) ? a.exactDate === b.exactDate : a.dayOfWeek === b.dayOfWeek;
+      if (!sameDay) continue;
+      const from = Math.max(a.periodStart, b.periodStart);
+      const to = Math.min(a.periodEnd, b.periodEnd);
+      if (from <= to) out.push({ a: a, b: b, from: from, to: to });
+    }
+  }
+  return out;
 }

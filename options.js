@@ -91,7 +91,7 @@ function save() {
       subjectColors[r.code] = r.color;
       if (r.name) subjectNames[r.code] = r.name;
     });
-    await chrome.storage.local.set({ settings: {
+    await ext.storage.local.set({ settings: {
       subjectColors, subjectNames, defaultColor,
       blacklist: blacklist.filter(b => b.match),
       ignoreAbsent: $('ignoreAbsent').checked,
@@ -137,15 +137,19 @@ $('copyRedirect').addEventListener('click', async () => {
 
 $('reset').addEventListener('click', async () => {
   if (!confirm('Khôi phục toàn bộ cài đặt về mặc định?')) return;
-  await chrome.storage.local.remove('settings');
+  await ext.storage.local.remove('settings');
   loadIntoUI(JSON.parse(JSON.stringify(DEFAULTS)));
 });
 
 $('ignoreAbsent').addEventListener('change', save);
-$('clientId').addEventListener('input', save);
+$('clientId').addEventListener('input', () => {
+  const v = $('clientId').value.trim();
+  $('clientIdHint').style.display = v && !/^[0-9A-Za-z._-]{5,120}\.apps\.googleusercontent\.com$/.test(v) ? 'block' : 'none';
+  save();
+});
 $('calendarId').addEventListener('input', save);
 
 (async function init() {
-  $('redirect').value = chrome.identity.getRedirectURL();
+  $('redirect').value = ext.identity.getRedirectURL();
   loadIntoUI(await loadSettings());
 })();
