@@ -27,7 +27,7 @@ Event description format: `Nhóm 5 | Mã: 501042 | Programming Methodology`
 
 ## 📦 Install
 
-1. Get the code: `git clone https://github.com/<your-username>/<repo>.git`, or **Code → Download ZIP** and unzip.
+1. Get the code: `git clone https://github.com/RyuuseiAkira/TDTU-Schedule-Exporter.git`, or **Code → Download ZIP** and unzip.
 2. Open `chrome://extensions` (Edge: `edge://extensions`).
 3. Turn on **Developer mode** (top right).
 4. Click **Load unpacked** and select the folder containing `manifest.json`.
