@@ -173,23 +173,7 @@ Re-sync any time: existing events are **updated** (room, time, color…) instead
 - The timetable is **not cached**.
 - Revoke access any time at <https://myaccount.google.com/permissions>.
 
-> 🙋 **If you fork / contribute:** never commit `.ics` files, saved timetable pages (`.html`), or screenshots containing your schedule, name or student ID. `.gitignore` already blocks common extensions.
-
 ---
-
-## 🗂️ Project structure
-
-```
-├── manifest.json     # Extension config (Manifest V3)
-├── popup.html / popup.js    # Popup UI + timetable scraping + .ics/CSV export
-├── options.html / options.js # Settings page
-├── background.js     # Service worker: Google sign-in + Calendar API calls
-├── shared.js         # Shared helpers: colors, event description, blacklist
-├── config.js         # Default values (first install)
-├── content.js        # Content script on TDTU pages
-├── icons/            # 16 / 48 / 128 icons
-└── LICENSE
-```
 
 ## 🧩 Known limitations
 
@@ -197,10 +181,6 @@ Re-sync any time: existing events are **updated** (room, time, color…) instead
 - Only Google Calendar's **11 event colors**.
 - If TDTU changes its page layout, the scraper may need updating.
 - No custom reminders; the calendar's default reminders apply.
-
-## 🤝 Contributing
-
-Issues and Pull Requests are welcome. When reporting bugs, **redact personal information** in screenshots / attachments.
 
 ## 📄 License
 
