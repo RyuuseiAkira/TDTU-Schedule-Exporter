@@ -175,30 +175,12 @@ Chạy đồng bộ lại bất cứ lúc nào: sự kiện cũ được **cập
 
 ---
 
-## 🗂️ Cấu trúc dự án
-
-```
-├── manifest.json     # Cấu hình extension (Manifest V3)
-├── popup.html / popup.js   # Giao diện popup + đọc lịch + xuất .ics/CSV
-├── options.html / options.js # Trang Settings
-├── background.js     # Service worker: đăng nhập Google + gọi Calendar API
-├── shared.js         # Hàm dùng chung: màu, mô tả sự kiện, blacklist
-├── config.js         # Giá trị mặc định (lần đầu cài)
-├── content.js        # Content script trên trang TDTU
-├── icons/            # Icon 16 / 48 / 128
-└── LICENSE
-```
-
 ## 🧩 Hạn chế đã biết
 
 - Chỉ đọc **tuần đang hiển thị** trên trang.
 - Chỉ có **11 màu** của Google Calendar cho sự kiện.
 - Nếu TDTU đổi giao diện / cấu trúc trang, việc đọc lịch có thể cần cập nhật.
 - Chưa có tuỳ chọn nhắc lịch (reminder) riêng, dùng nhắc mặc định của lịch.
-
-## 🤝 Đóng góp
-
-Issue và Pull Request luôn được chào đón. Khi báo lỗi, hãy **che thông tin cá nhân** trong ảnh chụp / file đính kèm.
 
 ## 📄 Giấy phép
 
