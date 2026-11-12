@@ -24,7 +24,7 @@ ext.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Chỉ chấp nhận tin nhắn từ popup.html của chính extension (content script, trang web
   // và extension khác có sender.url / sender.id khác nên bị bỏ qua).
   const popupUrl = ext.runtime.getURL('popup.html');
-  if (sender.id !== ext.runtime.id || !sender.url || !sender.url.startsWith(popupUrl)) {
+  if (sender.id !== ext.runtime.id || !sender.url || sender.url.split(/[?#]/)[0] !== popupUrl) {
     return false;
   }
   if (message && message.type === 'syncGoogle') {
@@ -47,11 +47,18 @@ function setSync(state, msg, badge) {
 // ── Kiểm tra dữ liệu nhận từ popup ──────────────────────────────────────────
 const DT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00$/;
 
+// Reject calendar rollover (e.g. February 30), not just malformed strings.
+function validDateTime(value) {
+  if (typeof value !== 'string' || !DT_RE.test(value)) return false;
+  const time = Date.parse(value + 'Z');
+  return Number.isFinite(time) && new Date(time).toISOString().slice(0, 19) === value;
+}
+
 // Dựng lại body từ danh sách trường được phép (không chuyển tiếp dữ liệu lạ)
 function buildSafeBody(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const s = raw.start && raw.start.dateTime, e = raw.end && raw.end.dateTime;
-  if (typeof s !== 'string' || typeof e !== 'string' || !DT_RE.test(s) || !DT_RE.test(e) || e <= s) return null;
+  if (typeof s !== 'string' || typeof e !== 'string' || !validDateTime(s) || !validDateTime(e) || e <= s) return null;
   const colorId = String(raw.colorId);
   if (!/^(?:[1-9]|1[01])$/.test(colorId)) return null;
   const clip = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
@@ -67,6 +74,7 @@ function validRange(r) {
   if (!r || typeof r.from !== 'string' || typeof r.to !== 'string') return null;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(r.from) || !/^\d{4}-\d{2}-\d{2}$/.test(r.to)) return null;
   const a = Date.parse(r.from + 'T00:00:00Z'), b = Date.parse(r.to + 'T00:00:00Z');
+  if (!validDateTime(r.from + 'T00:00:00') || !validDateTime(r.to + 'T00:00:00')) return null;
   if (!(b > a) || (b - a) / 864e5 > MAX_RANGE_DAYS) return null;
   return { from: r.from, to: r.to };
 }
@@ -196,6 +204,9 @@ async function syncToGoogle(rawEvents, rawRange) {
   for (const ev of rawEvents) {
     const body = buildSafeBody(ev && ev.body);
     if (!ev || typeof ev.key !== 'string' || ev.key.length > 600 || !body) throw new Error(tr('Có sự kiện sai định dạng, đã dừng'));
+    if (range && (body.start.dateTime.slice(0, 10) < range.from || body.end.dateTime > range.to + 'T00:00:00')) {
+      throw new Error(tr('Khoảng ngày đồng bộ không hợp lệ'));
+    }
     events.push({ key: ev.key, body });
   }
   if (!events.length && !range) throw new Error(tr('Không có sự kiện để đồng bộ'));
