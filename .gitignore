@@ -10,3 +10,8 @@ Thumbs.db
 node_modules/
 .vscode/
 .idea/
+
+# Vendored skill data is intentional; personal CSV exports stay ignored.
+!.agents/skills/**/*.csv
+__pycache__/
+*.pyc

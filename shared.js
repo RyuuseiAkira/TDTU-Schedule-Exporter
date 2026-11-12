@@ -80,6 +80,8 @@ function sanitizeSettings(raw) {
       .map(b => ({ match: cleanStr(b.match, 100), name: cleanStr(b.name, 100) }))
       .filter(b => b.match);
   }
+  if (typeof raw.animateMascot === 'boolean') out.animateMascot = raw.animateMascot;
+  out.language = raw.language === 'vi' ? 'vi' : 'en';
   if (typeof raw.ignoreAbsent === 'boolean') out.ignoreAbsent = raw.ignoreAbsent;
   if (lookupColor(raw.defaultColor)) out.defaultColor = String(raw.defaultColor).toLowerCase();
   if (typeof raw.clientId === 'string') out.clientId = cleanStr(raw.clientId, 120);
@@ -163,4 +165,9 @@ function findOverlaps(list) {
     }
   }
   return out;
+}
+
+// Alternate animation names so repeated feedback can restart without forced layout.
+function markUIFeedback(element) {
+  element.dataset.feedback = element.dataset.feedback === 'a' ? 'b' : 'a';
 }

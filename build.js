@@ -25,7 +25,7 @@ const GECKO_ID = 'tdtu-schedule-exporter@example.com';
 // Danh sách trắng: chỉ các file này mới được đóng gói (không bao giờ lẫn file .ics / .html cá nhân).
 // Thêm file nguồn mới thì nhớ thêm vào đây.
 const FILES = ['background.js', 'config.js', 'options.html', 'options.js',
-               'popup.html', 'popup.js', 'shared.js', 'icons', 'LICENSE'];
+               'popup.html', 'popup.js', 'shared.js', 'theme.css', 'assets', 'i18n.js', 'icons', 'LICENSE'];
 
 const base = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
 
@@ -34,7 +34,7 @@ const targets = {
   firefox: (m) => {
     const f = JSON.parse(JSON.stringify(m));
     delete f.minimum_chrome_version;
-    f.background = { scripts: ['config.js', 'shared.js', 'background.js'] };   // event page
+    f.background = { scripts: ['config.js', 'shared.js', 'i18n.js', 'background.js'] };   // event page
     f.browser_specific_settings = {
       gecko: {
         id: GECKO_ID,

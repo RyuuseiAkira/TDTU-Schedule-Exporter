@@ -3,7 +3,7 @@
 // trước khi gửi lên Google; chỉ xoá đúng các sự kiện do extension tạo.
 // Chrome/Edge: service worker → importScripts. Firefox: event page → các file nạp qua
 // background.scripts trong manifest (importScripts không tồn tại).
-if (typeof importScripts === 'function') importScripts('config.js', 'shared.js');
+if (typeof importScripts === 'function') importScripts('config.js', 'shared.js', 'i18n.js');
 
 const TZ = 'Asia/Ho_Chi_Minh';
 const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
@@ -31,7 +31,7 @@ ext.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (syncing) { sendResponse({ started: false, reason: 'busy' }); return false; }
     syncing = true;
     syncToGoogle(message.events, message.range)
-      .catch(err => setSync('error', 'Lỗi: ' + err.message, true))
+      .catch(err => setSync('error', tr('Lỗi: ') + err.message, true))
       .finally(() => { syncing = false; });
     sendResponse({ started: true });
   }
@@ -87,16 +87,16 @@ async function getToken() {
     state
   });
   const res = await ext.identity.launchWebAuthFlow({ url, interactive: true });
-  if (!res || !res.startsWith(redirect)) throw new Error('Phản hồi đăng nhập không hợp lệ');
+  if (!res || !res.startsWith(redirect)) throw new Error(tr('Phản hồi đăng nhập không hợp lệ'));
 
   const params = new URLSearchParams(new URL(res).hash.replace(/^#/, ''));
-  if (params.get('error')) throw new Error('Google từ chối: ' + params.get('error'));
-  if (params.get('state') !== state) throw new Error('Phản hồi đăng nhập không khớp (state)');
+  if (params.get('error')) throw new Error(tr('Google từ chối: ') + params.get('error'));
+  if (params.get('state') !== state) throw new Error(tr('Phản hồi đăng nhập không khớp (state)'));
   const token = params.get('access_token');
-  if (!token) throw new Error('Không lấy được token đăng nhập Google');
-  if ((params.get('token_type') || 'Bearer').toLowerCase() !== 'bearer') throw new Error('Loại token không hợp lệ');
+  if (!token) throw new Error(tr('Không lấy được token đăng nhập Google'));
+  if ((params.get('token_type') || 'Bearer').toLowerCase() !== 'bearer') throw new Error(tr('Loại token không hợp lệ'));
   const granted = (params.get('scope') || '').split(/\s+/);
-  if (!granted.includes(SCOPE)) throw new Error('Bạn chưa cấp quyền quản lý sự kiện lịch');
+  if (!granted.includes(SCOPE)) throw new Error(tr('Bạn chưa cấp quyền quản lý sự kiện lịch'));
   return token;                                      // chỉ giữ trong biến cục bộ, không lưu
 }
 
@@ -172,7 +172,7 @@ async function cleanupStale(token, keepIds, range, existingMap) {
 
   // Chốt an toàn: nếu số sự kiện cần xoá bất thường thì dừng, không xoá gì cả
   if (stale.length > MAX_DELETE) {
-    throw new Error('Có ' + stale.length + ' sự kiện cần xoá (> ' + MAX_DELETE + '), đã dừng để an toàn. Kiểm tra lại lịch.');
+    throw new Error(tr('Có ') + stale.length + tr(' sự kiện cần xoá (> ') + MAX_DELETE + tr('), đã dừng để an toàn. Kiểm tra lại lịch.'));
   }
   let deleted = 0;
   for (const id of stale) {
@@ -184,35 +184,35 @@ async function cleanupStale(token, keepIds, range, existingMap) {
 
 async function syncToGoogle(rawEvents, rawRange) {
   await loadSettings();
-  if (!CLIENT_ID_RE.test(SETTINGS.clientId || '')) throw new Error('Google Client ID chưa nhập hoặc sai định dạng — mở ⚙️ Settings');
-  if (!CALENDAR_ID_RE.test(SETTINGS.calendarId || 'primary')) throw new Error('Calendar ID không hợp lệ — mở ⚙️ Settings');
+  if (!CLIENT_ID_RE.test(SETTINGS.clientId || '')) throw new Error(tr('Google Client ID chưa nhập hoặc sai định dạng — mở ⚙️ Settings'));
+  if (!CALENDAR_ID_RE.test(SETTINGS.calendarId || 'primary')) throw new Error(tr('Calendar ID không hợp lệ — mở ⚙️ Settings'));
 
-  if (!Array.isArray(rawEvents)) throw new Error('Dữ liệu đồng bộ không hợp lệ');
-  if (rawEvents.length > MAX_EVENTS) throw new Error('Quá nhiều sự kiện (' + rawEvents.length + ' > ' + MAX_EVENTS + ')');
+  if (!Array.isArray(rawEvents)) throw new Error(tr('Dữ liệu đồng bộ không hợp lệ'));
+  if (rawEvents.length > MAX_EVENTS) throw new Error(tr('Quá nhiều sự kiện (') + rawEvents.length + ' > ' + MAX_EVENTS + ')');
   const range = rawRange == null ? null : validRange(rawRange);
-  if (rawRange != null && !range) throw new Error('Khoảng ngày đồng bộ không hợp lệ');
+  if (rawRange != null && !range) throw new Error(tr('Khoảng ngày đồng bộ không hợp lệ'));
 
   const events = [];
   for (const ev of rawEvents) {
     const body = buildSafeBody(ev && ev.body);
-    if (!ev || typeof ev.key !== 'string' || ev.key.length > 600 || !body) throw new Error('Có sự kiện sai định dạng, đã dừng');
+    if (!ev || typeof ev.key !== 'string' || ev.key.length > 600 || !body) throw new Error(tr('Có sự kiện sai định dạng, đã dừng'));
     events.push({ key: ev.key, body });
   }
-  if (!events.length && !range) throw new Error('Không có sự kiện để đồng bộ');
+  if (!events.length && !range) throw new Error(tr('Không có sự kiện để đồng bộ'));
 
-  setSync('running', 'Đang đăng nhập Google...');
+  setSync('running', tr('Đang đăng nhập Google...'));
   const token = await getToken();
 
   let existingMap = null;
   if (range) {
-    setSync('running', 'Đang kiểm tra lịch hiện tại...');
+    setSync('running', tr('Đang kiểm tra lịch hiện tại...'));
     existingMap = await fetchExisting(token, range);
   }
 
   let created = 0, updated = 0, unchanged = 0, deleted = 0;
   const keepIds = new Set();
   for (let i = 0; i < events.length; i++) {
-    setSync('running', 'Đang đồng bộ ' + (i + 1) + '/' + events.length + '...');
+    setSync('running', tr('Đang đồng bộ ') + (i + 1) + '/' + events.length + '...');
     const id = await eventId(events[i].key);
     keepIds.add(id);
     const body = Object.assign({ id }, events[i].body);
@@ -241,10 +241,10 @@ async function syncToGoogle(rawEvents, rawRange) {
     }
   }
   if (range) {
-    setSync('running', 'Đang dọn sự kiện cũ...');
+    setSync('running', tr('Đang dọn sự kiện cũ...'));
     deleted = await cleanupStale(token, keepIds, range, existingMap);
   }
-  const summary = 'Xong ✓ Tạo mới ' + created + ', cập nhật ' + updated +
-    (unchanged ? ', giữ nguyên ' + unchanged : '') + ', xoá ' + deleted + ' sự kiện';
+  const summary = tr('Xong ✓ Tạo mới ') + created + tr(', cập nhật ') + updated +
+    (unchanged ? tr(', giữ nguyên ') + unchanged : '') + tr(', xoá ') + deleted + tr(' sự kiện');
   setSync('done', summary, true);
 }

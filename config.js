@@ -2,6 +2,8 @@
 // Bạn không cần sửa file này: bấm ⚙️ trong popup (hoặc chuột phải icon → Options)
 // để chỉnh màu, Client ID, Calendar ID ngay trong extension.
 const DEFAULTS = {
+  language: 'en',
+  animateMascot: true,
   // mã môn → tên màu (tomato, flamingo, tangerine, banana, sage, basil,
   //                   peacock, blueberry, lavender, grape, graphite)
   subjectColors: {

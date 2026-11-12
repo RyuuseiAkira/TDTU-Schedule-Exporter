@@ -1,108 +1,113 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>TDTU Schedule Exporter — Settings</title>
-<style>
-  :root{--bg:#0f1117;--surface:#1a1d27;--surface2:#242736;--border:#2e3347;--accent:#e85d26;--accent2:#f4a261;--text:#eef0f8;--dim:#7b8099;--ok:#3ecf8e;--err:#f87171}
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 'Be Vietnam Pro',system-ui,sans-serif}
-  .wrap{max-width:760px;margin:0 auto;padding:28px 20px 80px}
-  h1{font-size:20px;margin:0 0 4px} .sub{color:var(--dim);margin:0 0 24px}
-  section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px}
-  h2{font-size:14px;margin:0 0 4px;text-transform:uppercase;letter-spacing:.8px;color:var(--accent2)}
-  .hint{color:var(--dim);font-size:12.5px;margin:0 0 14px}
-  .row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border);flex-wrap:wrap}
-  .row:first-of-type{border-top:0}
-  input[type=text]{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font:inherit;min-width:0}
-  input[type=text]:focus{outline:none;border-color:var(--accent)}
-  .code{width:100px;font-variant-numeric:tabular-nums} .name{flex:1;min-width:140px}
-  .full{width:100%}
-  .palette{display:flex;gap:6px;flex-wrap:wrap}
-  .dot{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;transition:transform .1s}
-  .dot:hover{transform:scale(1.15)}
-  .dot.sel{border-color:#fff;box-shadow:0 0 0 2px var(--bg) inset}
-  button.btn{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer}
-  button.btn:hover{border-color:var(--accent);color:var(--accent2)}
-  button.primary{background:linear-gradient(135deg,var(--accent),#c44a17);border:0;color:#fff}
-  .del{background:none;border:0;color:var(--dim);cursor:pointer;font-size:16px} .del:hover{color:var(--err)}
-  .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-  label{display:block;font-size:12px;color:var(--dim);margin:12px 0 4px}
-  .copy-row{display:flex;gap:8px}
-  code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:12px}
-  ol{margin:6px 0 0;padding-left:20px;color:var(--dim);font-size:12.5px} ol li{margin:2px 0}
-  a{color:var(--accent2)}
-  #saved{position:fixed;right:18px;bottom:18px;background:var(--surface2);border:1px solid var(--ok);color:var(--ok);padding:8px 14px;border-radius:8px;opacity:0;transition:opacity .25s;pointer-events:none}
-  #saved.show{opacity:1}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <h1>⚙️ Settings</h1>
-  <p class="sub">Mọi thay đổi được lưu tự động.</p>
 
-  <section>
-    <h2>🎨 Màu theo môn học</h2>
-    <p class="hint">Mã môn là số sau "Ma:" trong mô tả sự kiện. Chọn màu bằng cách bấm vào chấm tròn.</p>
-    <div id="subjects"></div>
+<link rel="stylesheet" href="theme.css">
+</head>
+<body class="settings-page"><div class="ambient-notes" aria-hidden="true"><span>♫</span><span>♪</span><span>♫</span><span>♪</span><span>♫</span><span>♪</span></div>
+<div class="wrap">
+  <header class="settings-header"><div class="mascot-head"><svg xmlns="http://www.w3.org/2000/svg" class="mascot-avatar" viewBox="0 0 64 64" role="img" aria-label="Hatsune Miku">
+        <!-- hai bím tóc -->
+        <path d="M14 26 Q-2 34 3 62 Q14 58 19 42 Z" fill="#39c5bb"/>
+        <path d="M50 26 Q66 34 61 62 Q50 58 45 42 Z" fill="#39c5bb"/>
+        <path d="M9 52 Q8 58 5 60" stroke="#7fe9e0" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        <path d="M55 52 Q56 58 59 60" stroke="#7fe9e0" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        <!-- dây buộc tóc -->
+        <circle cx="12" cy="29" r="3.2" fill="#e12885"/>
+        <circle cx="52" cy="29" r="3.2" fill="#e12885"/>
+        <!-- tóc + mặt -->
+        <circle cx="32" cy="33" r="22" fill="#39c5bb"/>
+        <ellipse cx="32" cy="40" rx="18.5" ry="16.5" fill="#fff1e6"/>
+        <path d="M13 35 Q16 11 32 11 Q48 11 51 35 Q44 23 38 28 Q33 20 29 28 Q21 21 13 35Z" fill="#39c5bb"/>
+        <path d="M22 16 Q27 13 31 17" stroke="#7fe9e0" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        <!-- headphone -->
+        <path d="M9.5 31 Q9 7 32 7 Q55 7 54.5 31" stroke="#1f2a30" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+        <rect x="5" y="26" width="7" height="13" rx="3.2" fill="#2b3a42" stroke="#39c5bb" stroke-width="1.2"/>
+        <rect x="52" y="26" width="7" height="13" rx="3.2" fill="#2b3a42" stroke="#39c5bb" stroke-width="1.2"/>
+        <!-- mắt -->
+        <g class="mascot-eyes">
+          <ellipse cx="23.5" cy="42" rx="4.2" ry="5.6" fill="#0f3d3a"/>
+          <ellipse cx="40.5" cy="42" rx="4.2" ry="5.6" fill="#0f3d3a"/>
+          <ellipse cx="23.5" cy="44.6" rx="3" ry="2" fill="#39c5bb"/>
+          <ellipse cx="40.5" cy="44.6" rx="3" ry="2" fill="#39c5bb"/>
+          <circle cx="25.1" cy="39.8" r="1.7" fill="#fff"/>
+          <circle cx="42.1" cy="39.8" r="1.7" fill="#fff"/>
+        </g>
+        <!-- má hồng + miệng -->
+        <ellipse cx="16" cy="49" rx="3.4" ry="2" fill="#fb7185" opacity=".5"/>
+        <ellipse cx="48" cy="49" rx="3.4" ry="2" fill="#fb7185" opacity=".5"/>
+        <path d="M29 50 Q30.5 52.2 32 50 Q33.5 52.2 35 50" stroke="#9f1239" fill="none" stroke-width="1.4" stroke-linecap="round"/>
+        <!-- giọt mồ hôi: chỉ hiện khi có lỗi -->
+        <path class="sweat" d="M56 22 Q60.5 29 56 32 Q51.5 29 56 22Z" fill="#7fe9e0" stroke="#fff" stroke-width=".8"/>
+      </svg>
+</div><div><div class="eyebrow">Miku / Schedule</div><h1><span data-i18n="Bảng điều khiển">Control panel</span></h1><p class="sub"><span data-i18n="Màu sắc, lịch học và mọi thứ theo cách của bạn.">Your schedule, colors, and connections. All in one place.</span></p></div><span class="autosave"><span data-i18n="● Tự động lưu">● Auto-save enabled</span></span></header><nav class="settings-nav" aria-label="Các mục cài đặt" data-i18n-aria-label="Các mục cài đặt"><a href="#appearance"><span data-i18n="Giao diện">Appearance</span></a><a href="#colors"><span data-i18n="Màu môn học">Subject colors</span></a><a href="#classes"><span data-i18n="Lớp học">Classes</span></a><a href="#excluded"><span data-i18n="Môn ẩn">Hidden subjects</span></a><a href="#calendar">Calendar</a></nav>
+
+  <section id="appearance"><h2><span data-i18n="Giao diện">Appearance</span></h2><p class="hint"><span data-i18n="Chọn ngôn ngữ cho popup và trang cài đặt.">Choose the language for the popup and settings.</span></p><label for="language"><span data-i18n="Ngôn ngữ giao diện">Interface language</span></label><select id="language"><option value="en">English</option><option value="vi">Tiếng Việt</option></select><label class="motion-option"><input type="checkbox" id="animateMascot"><span data-i18n="Hiệu ứng chuyển động">Animations</span></label><p class="hint" data-i18n="Tự động tắt khi hệ thống bật giảm chuyển động.">Automatically disabled when your system requests reduced motion.</p></section>
+  <section id="colors">
+    <h2><span data-i18n="Màu theo môn học">Subject colors</span></h2>
+    <p class="hint"><span data-i18n="Mã môn là số sau &quot;Ma:&quot; trong mô tả sự kiện. Chọn màu bằng cách bấm vào chấm tròn.">Find the subject code after “Mã:” in the event description. Select a circle to assign a color.</span></p>
+    <div id="subjects"></div><p id="duplicateCodes" class="field-error" role="status" hidden></p>
     <div class="actions">
-      <button class="btn" id="addRow">＋ Thêm môn</button>
+      <button class="btn" id="addRow"><span data-i18n="＋ Thêm môn">+ Add subject</span></button>
     </div>
-    <label>Màu mặc định cho môn chưa khai báo</label>
+    <label><span data-i18n="Màu mặc định cho môn chưa khai báo">Default color for unassigned subjects</span></label>
     <div class="palette" id="defaultPalette"></div>
   </section>
 
-  <section>
-    <h2>📅 Lớp học</h2>
+  <section id="classes">
+    <h2><span data-i18n="Lọc lớp học">Class filters</span></h2>
     <label style="display:flex;align-items:center;gap:10px;margin:0;color:var(--text);font-size:14px;cursor:pointer">
       <input type="checkbox" id="ignoreAbsent" style="width:18px;height:18px;accent-color:var(--accent)">
-      Bỏ qua các lớp có “GV báo vắng”
+      <span data-i18n="Bỏ qua các lớp có “GV báo vắng”">Hide classes marked “GV báo vắng” (lecturer absent)</span>
     </label>
-    <p class="hint" style="margin:6px 0 0 28px">Bật: lớp giáo viên báo vắng bị ẩn khỏi popup, không xuất / đồng bộ, và lần đồng bộ Google Calendar kế tiếp sẽ xoá sự kiện cũ của lớp đó. Tắt: vẫn xuất, ghi chú “GV báo vắng” nằm trong mô tả.</p>
+    <p class="hint" style="margin:6px 0 0 28px"><span data-i18n="Bật: lớp giáo viên báo vắng bị ẩn khỏi popup, không xuất / đồng bộ, và lần đồng bộ Google Calendar kế tiếp sẽ xoá sự kiện cũ của lớp đó. Tắt: vẫn xuất, ghi chú “GV báo vắng” nằm trong mô tả.">When enabled, classes with an absent lecturer are hidden and excluded from exports. The next Calendar sync removes their old events. Otherwise, they remain with an absence note.</span></p>
   </section>
 
-  <section>
-    <h2>🚫 Blacklist</h2>
-    <p class="hint">Môn trong danh sách này bị ẩn khỏi popup và không xuất ra .ics / Excel / Google Calendar.
-      Nhập <b>mã môn</b> (ví dụ <code>000000</code>) hoặc <b>từ khoá trong tên môn</b> (ví dụ <code>tiếng anh</code>).</p>
+  <section id="excluded">
+    <h2><span data-i18n="Môn học được ẩn">Hidden subjects</span></h2>
+    <p class="hint" data-i18n="Môn trong danh sách này được ẩn và không xuất hoặc đồng bộ. Nhập mã môn (ví dụ 000000) hoặc từ khoá trong tên môn (ví dụ tiếng anh).">Hidden subjects are excluded from exports and sync. Enter a subject code (e.g. 000000) or a keyword from its name (e.g. tiếng anh).</p>
     <div id="blacklist"></div>
     <div class="actions">
-      <button class="btn" id="addBlack">＋ Thêm vào blacklist</button>
+      <button class="btn" id="addBlack"><span data-i18n="＋ Thêm vào blacklist">+ Add hidden subject</span></button>
     </div>
   </section>
 
-  <section>
-    <h2>☁️ Google Calendar</h2>
-    <p class="hint">Cần để đồng bộ có màu (Google bỏ qua màu khi import file .ics).</p>
-    <label>Google OAuth Client ID</label>
-    <input type="text" class="full" id="clientId" placeholder="123456-abcdef.apps.googleusercontent.com" spellcheck="false" autocomplete="off">
-    <div id="clientIdHint" class="hint" style="display:none;color:var(--err);margin:4px 0 0">Client ID sai định dạng: phải kết thúc bằng <code>.apps.googleusercontent.com</code></div>
-    <label>Calendar ID (để <code>primary</code> = lịch chính; nên tạo lịch riêng cho TDTU để dễ xoá)</label>
+  <section id="calendar">
+    <h2><span data-i18n="Kết nối Google Calendar">Connect Google Calendar</span></h2>
+    <p class="hint"><span data-i18n="Cần để đồng bộ có màu (Google bỏ qua màu khi import file .ics).">Connect to sync subject colors. Google ignores colors when importing ICS files.</span></p>
+    <label for="clientId">Google OAuth Client ID</label>
+    <div class="secret-field"><input type="password" class="full" id="clientId" placeholder="Nhập Google OAuth Client ID" data-i18n-placeholder="Nhập Google OAuth Client ID" spellcheck="false" autocomplete="off" aria-describedby="clientIdHint"><button type="button" id="toggleClientId" class="reveal" aria-label="Hiện Client ID" data-i18n-aria-label="Hiện Client ID" aria-pressed="false" title="Hiện Client ID" data-i18n-title="Hiện Client ID"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m4 4 16 16"/></svg></button></div>
+    <div id="clientIdHint" role="status" class="hint" style="display:none;color:var(--err);margin:4px 0 0"><span data-i18n="Client ID sai định dạng: phải kết thúc bằng">Invalid Client ID: it must end with</span> <code>.apps.googleusercontent.com</code></div>
+    <label for="calendarId"><span data-i18n="Calendar ID (để">Calendar ID (use</span> <code>primary</code> <span data-i18n="= lịch chính; nên tạo lịch riêng cho TDTU để dễ xoá)">for your main calendar; a dedicated TDTU calendar is recommended)</span></label>
     <input type="text" class="full" id="calendarId" placeholder="primary" spellcheck="false">
-    <label>Redirect URI — dán vào Google Cloud → Credentials → Authorized redirect URIs</label>
+    <label for="redirect"><span data-i18n="Redirect URI — dán vào Google Cloud → Credentials → Authorized redirect URIs">Redirect URI — paste into Google Cloud → Credentials → Authorized redirect URIs</span></label>
     <div class="copy-row">
       <input type="text" class="full" id="redirect" readonly>
-      <button class="btn" id="copyRedirect">Copy</button>
+      <button class="btn" id="copyRedirect" data-i18n="Sao chép">Copy</button>
     </div>
-    <label>Cách lấy Client ID (làm 1 lần, miễn phí)</label>
+    <details class="setup-help"><summary><span data-i18n="Cách lấy Client ID">Get a Google OAuth Client ID</span> <span><span data-i18n="Thiết lập một lần">One-time setup</span></span></summary>
     <ol>
-      <li>Vào <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer">console.cloud.google.com</a> → tạo project.</li>
-      <li>APIs &amp; Services → Library → bật <b>Google Calendar API</b>.</li>
-      <li>OAuth consent screen → External → thêm email của bạn vào <b>Test users</b>.</li>
-      <li>Credentials → Create → OAuth client ID → loại <b>Web application</b> → dán Redirect URI ở trên.</li>
-      <li>Copy Client ID dán vào ô phía trên.</li>
-    </ol>
+      <li><span data-i18n="Vào">Open</span> <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer">console.cloud.google.com</a> <span data-i18n="→ tạo project.">→ create a project.</span></li>
+      <li><span data-i18n="APIs &amp; Services → Library → bật">APIs &amp; Services → Library → enable</span> <b>Google Calendar API</b>.</li>
+      <li><span data-i18n="OAuth consent screen → External → thêm email của bạn vào">OAuth consent screen → External → add your email to</span> <b>Test users</b>.</li>
+      <li><span data-i18n="Credentials → Create → OAuth client ID → loại">Credentials → Create → OAuth client ID → select</span> <b>Web application</b> <span data-i18n="→ dán Redirect URI ở trên.">→ paste the Redirect URI above.</span></li>
+      <li><span data-i18n="Copy Client ID dán vào ô phía trên.">Copy your Client ID and paste it into the field above.</span></li>
+    </ol></details>
   </section>
 
-  <section>
-    <h2>♻️ Khác</h2>
-    <button class="btn" id="reset">Khôi phục mặc định</button>
+  <section id="reset-section">
+    <h2><span data-i18n="Bắt đầu lại">Reset settings</span></h2>
+    <button class="btn" id="reset"><span data-i18n="Khôi phục mặc định">Restore defaults</span></button>
   </section>
 </div>
-<div id="saved">Đã lưu ✓</div>
+<footer class="settings-ambience"><span>Miku Helper</span><a href="https://github.com/RyuuseiAkira/TDTU-Schedule-Exporter" target="_blank" rel="noopener noreferrer">GitHub →</a></footer>
+<div id="saved" role="status" aria-live="polite"><span data-i18n="Đã lưu ✓">Saved ✓</span></div>
 <script src="config.js"></script>
 <script src="shared.js"></script>
+<script src="i18n.js"></script>
 <script src="options.js"></script>
 </body>
 </html>
