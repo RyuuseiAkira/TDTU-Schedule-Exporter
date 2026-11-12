@@ -1,7 +1,7 @@
 # TDTU Schedule Exporter
 
 <p align="center">
-  <img src="docs/images/miku-helper-logo.png" alt="Miku Helper sticker logo with a sleeping Miku mascot and calendar sync panel" width="800">
+  <img src="docs/images/miku-helper-logo.png" alt="Miku Helper sticker logo with a sleeping Miku mascot and calendar sync panel" width="560">
 </p>
 
 **English** · [Tiếng Việt](README.vn.md)
