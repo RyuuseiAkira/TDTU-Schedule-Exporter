@@ -1,0 +1,63 @@
+[
+  {
+    "repository": "https://github.com/nexu-io/open-design",
+    "commit": "614795896e09a2c1682b24cc1406529baf531bd7",
+    "skills": [
+      "frontend-design",
+      "design-brief",
+      "impeccable-design-polish"
+    ]
+  },
+  {
+    "repository": "https://github.com/ibelick/ui-skills",
+    "commit": "f511eae41c996e3953fbeabf95d38e4077d40711",
+    "skills": [
+      "baseline-ui",
+      "fixing-accessibility",
+      "fixing-motion-performance",
+      "create-design-md"
+    ]
+  },
+  {
+    "repository": "https://github.com/anthropics/skills.git",
+    "commit": "2c5958ecac7cee2b583967a2c4981d0f4a75c579",
+    "skills": [
+      "frontend-design"
+    ]
+  },
+  {
+    "repository": "https://github.com/anthropics/knowledge-work-plugins.git",
+    "commit": "877a617b435ee2edfb002d9a3703c0a1a03aa1ba",
+    "skills": [
+      "design-system"
+    ]
+  },
+  {
+    "repository": "https://github.com/pbakaus/impeccable.git",
+    "commit": "b4bff1626c344067788c2679f048a20057c7cc5a",
+    "skills": [
+      "impeccable"
+    ]
+  },
+  {
+    "repository": "https://github.com/kaankiziltug/logo-design-skill.git",
+    "commit": "bbf31e521d765eb6d53242549bbee7c2e5bbd6bc",
+    "skills": [
+      "logo-design"
+    ]
+  },
+  {
+    "repository": "https://github.com/Leonxlnx/taste-skill.git",
+    "commit": "f6b76575f949707b4e3c37cd86cb44b0b98643e8",
+    "skills": [
+      "taste-skill"
+    ]
+  },
+  {
+    "repository": "https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git",
+    "commit": "6ae86f61f520d6ca229d2f40e070410638c908c5",
+    "skills": [
+      "ui-ux-pro-max"
+    ]
+  }
+]
