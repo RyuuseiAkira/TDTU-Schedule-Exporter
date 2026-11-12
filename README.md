@@ -2,211 +2,202 @@
 
 **English** · [Tiếng Việt](README.vn.md)
 
-A Chrome, Edge, and Firefox extension that reads your **timetable** from the Ton Duc Thang University (TDTU) schedule page and lets you:
+A Chrome, Edge, and Firefox extension that reads your weekly TDTU timetable. Download it as an ICS calendar file or CSV spreadsheet, or sync it to Google Calendar with a different color for each subject.
 
-- export an **.ics** file (Google Calendar, Outlook, Apple Calendar...)
-- export **Excel / CSV**
-- **sync straight to Google Calendar with a different color per subject**
+This is a personal project, not affiliated with TDTU or Google. Based on [MinhQuan06/TDTU-extensions](https://github.com/MinhQuan06/TDTU-extensions).
 
-> [!NOTE]
-> Personal project, **not affiliated with TDTU**. Based on [MinhQuan06/TDTU-extensions](https://github.com/MinhQuan06/TDTU-extensions).
+## Preview
 
-## Features
+Current interface with sample timetable data. English is shown here; switch to Vietnamese in Settings.
 
-| Feature | Description |
-|---|---|
-| Weekly import | Reads the timetable currently open and resolves the real date of each class |
-| Color per subject | Colors are assigned by **subject code** and editable in Settings |
-| Google Calendar sync | Creates / updates events through the API; re-running **never duplicates**, skips unchanged events, and removes outdated ones |
-| Overlap detection | Detects overlapping classes on the same day (including classes nested in the same cell) and displays a warning while still exporting both |
-| Blacklist | Hide subjects by code or name keyword (default hides `000000` - "Lịch học Tiếng Anh dự kiến") |
-| Ignore "GV báo vắng" | Toggle in Settings; classes the lecturer reported absent are not exported / synced |
-| No cache | Every popup session re-reads the current timetable from the TDTU page |
+<img src="docs/images/popup-en.png" alt="English Miku popup with the selected week, Google Calendar sync and file export controls" width="320">
 
-Event description format: `Nhóm 5 | Mã: 501042 | Programming Methodology`
+<details>
+<summary>View Settings</summary>
 
----
+<img src="docs/images/settings-en.png" alt="English Settings page with language, animation, subject colors, filters and Google Calendar fields" width="960">
+
+</details>
 
 ## Install
 
+Download this repository using **Code → Download ZIP**, then extract it. Keep the extension folder somewhere permanent.
+
 ### Chrome / Edge
 
-1. Get the code: `git clone https://github.com/RyuuseiAkira/TDTU-Schedule-Exporter.git`, or **Code -> Download ZIP** and unzip.
-2. Open `chrome://extensions` (Edge: `edge://extensions`).
-3. Turn on **Developer mode** (top right).
-4. Click **Load unpacked** and select the project root folder (or `dist/chrome` if built).
+1. Open `chrome://extensions` or `edge://extensions`.
+2. Enable **Developer mode**.
+3. Choose **Load unpacked** and select the extracted folder containing `manifest.json`.
+4. Pin the extension to your browser toolbar if you want quick access.
 
-> [!TIP]
-> After editing code or `config.js`, click **Reload** on the extension card.
+After updating the files, use **Reload** on the extension card.
 
-### Firefox (140+)
+### Firefox 140+
 
-Firefox uses background event scripts instead of a service worker, so a separate manifest is generated with Node.js:
+Firefox needs its own build. Install [Node.js](https://nodejs.org/) and run this command from the project folder:
 
-1. Run `node build.js firefox` in the project directory (requires Node.js, no external packages needed). This generates `dist/firefox/`.
-2. Open `about:debugging#/runtime/this-firefox`.
-3. Click **Load Temporary Add-on...** and select `dist/firefox/manifest.json`.
+```sh
+node build.js firefox
+```
 
-> [!IMPORTANT]
-> If you plan to use Google Calendar sync on Firefox, edit `GECKO_ID` in `build.js` to your own unique add-on ID (e.g. `yourname-tdtu@example.com`) **before** building and registering the Redirect URI in Google Cloud.
+Open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on**, and select `dist/firefox/manifest.json`.
 
-## Usage
+This unsigned installation lasts until Firefox restarts. A permanent installation requires Mozilla signing. If you customize the add-on ID (`GECKO_ID` in `build.js`), do so before setting up Google Calendar, because changing it changes the Redirect URI.
 
-1. Sign in to [stdportal.tdtu.edu.vn](https://stdportal.tdtu.edu.vn) and open the **Timetable** page (weekly view).
-2. Click the extension icon -> **Lấy lịch học** (Get schedule).
-3. Pick an export:
-   - **Xuất .ics** -> import into a calendar (Google Calendar **ignores colors** in .ics files).
-   - **Xuất Excel** -> downloads a UTF-8 CSV file ready for Excel.
-   - **Đồng bộ Google Calendar (có màu)** -> needs the one-time API setup below.
+## Get your schedule
 
-Only the **week currently displayed** is read. To export another week, switch weeks on the TDTU page and click **Lấy lịch học** again.
+1. Sign in to [Student Portal](https://stdportal.tdtu.edu.vn) and open **Timetable / Thời khoá biểu**.
+2. Select the week you want on the TDTU page.
+3. Open the extension and choose **Get schedule**.
+4. Expand **Schedule** to review the classes, then choose an option below.
 
----
+| Option | What you get | Google setup needed? |
+|---|---|---|
+| **Calendar file (.ics)** | A file you can import into Google Calendar, Apple Calendar, or Outlook | No |
+| **Spreadsheet (.csv)** | A UTF-8 CSV file for Excel or Google Sheets | No |
+| **Sync to Google Calendar** | Calendar events with your chosen subject colors | Yes, once; follow the guide below |
 
-## Settings
+Only the week displayed on the TDTU page is read. To get another week, change it on the page and choose **Refresh**. Google Calendar ignores subject colors when importing ICS files; use direct sync if you want colors.
 
-Click the gear icon in the popup (or right-click the extension icon -> *Options*). Changes are **saved automatically**.
+The interface starts in English. Change it under **Settings → Appearance → Interface language**.
 
-- **Màu theo môn học (colors)**: one row per subject code + color. Click a dot to pick a color, the ban button to move it to the blacklist, or the delete button to remove it.
-  Unlisted subjects use the **default color**. The popup shows **Thêm vào Settings** to auto-assign colors to new subjects.
-- **Lớp học**: toggle *Ignore "GV báo vắng" classes* (on by default).
-- **Blacklist**: enter a **subject code** (digits only, exact match, e.g. `000000`) or a **keyword** in the subject name (e.g. `tiếng anh`, case-insensitive). Short keywords may hide other subjects by accident.
-- **Google Calendar**: Client ID and Calendar ID (see below).
-- **Reset to defaults**.
+## Connect Google Calendar
 
-Google offers only **11 event colors**: Lavender, Sage, Grape, Flamingo, Banana, Tangerine, Peacock, Graphite, Blueberry, Basil, Tomato. Arbitrary hex colors are not possible.
+Allow about 10–15 minutes for the first setup. You only need to do this if you want direct sync; downloading ICS or CSV works without it.
 
-Initial defaults live in `config.js` (you don't need to edit it if you use Settings).
+### First: which “key” do you need?
 
----
+You need a **Google OAuth Client ID**, not an API key. It looks like:
 
-## Google Calendar API setup (one time, free, ~10 min)
+```text
+123456789-example.apps.googleusercontent.com
+```
 
-### Why is this needed?
+You will copy two things between the extension and Google Cloud:
 
-When you import an `.ics` file, Google Calendar **discards per-event colors**. The only way to get one color per subject is to create events via the **Google Calendar API** (the `colorId` field). The API needs an **OAuth Client ID that you create yourself**, so the extension can ask permission to add events to your calendar.
+| Value | Copy from | Paste into |
+|---|---|---|
+| **Redirect URI** | Extension Settings → Google Calendar | Google Cloud → OAuth client → Authorized redirect URIs |
+| **Client ID** | Google Cloud → OAuth client | Extension Settings → Google OAuth Client ID |
 
-- No credit card needed; the Google Calendar API is free.
-- The **Client ID is not a secret** (this extension uses no client secret), but you should still use your own rather than sharing one.
-- The extension only requests the `calendar.events` scope (create / edit / delete events). It cannot read your email, contacts, or anything else.
+The Client ID identifies your app and is not a password. The extension does **not** need a Client secret. Leave **Calendar ID** as `primary` for now; it means your main calendar.
 
-> [!NOTE]
-> Google Cloud Console's UI changes often; menu names may differ slightly (e.g. *OAuth consent screen* now lives under **Google Auth Platform**). Follow the intent of each step.
+### 1. Copy the extension's Redirect URI
 
-### Step 1 - Get the extension's Redirect URI
+Open the extension's gear button, scroll to **Connect Google Calendar**, and copy the **Redirect URI** using its copy button. Keep Settings open.
 
-1. Load the extension (see Install).
-2. Open **Settings** -> **Google Calendar** -> the **Redirect URI** field:
-   - On Chrome / Edge: `https://abcdefghijklmnopqrstuvwxyzabcdef.chromiumapp.org/`
-   - On Firefox: `https://<hash>.extensions.allizom.org/`
-3. Click **Copy** (used in Step 5). If you use both browsers, copy and add both Redirect URIs in Step 5.
+The address usually ends in `.chromiumapp.org/` on Chrome/Edge or `.extensions.allizom.org/` on Firefox. **Copy the actual address from your Settings; do not type one from an example.**
 
-> [!WARNING]
-> On Chrome/Edge, the `abcdef...` part is the **extension ID**, which depends on the folder path used for *Load unpacked*. If you **move or rename the folder** or reinstall elsewhere, the ID changes and you must update the Redirect URI in Google Cloud (Step 5).
+<img src="docs/images/calendar-setup-en.png" alt="Google Calendar settings showing the masked Client ID, Calendar ID and a sample Redirect URI with its Copy button" width="760">
 
-### Step 2 - Create a Google Cloud project
+*Example only: copy the Redirect URI from your own installation.*
 
-1. Go to <https://console.cloud.google.com> and sign in with the Google account that owns your calendar.
-2. Click the project picker at the top -> **New project** -> name it (e.g. `TDTU Calendar`) -> **Create**.
-3. Make sure the new project is selected.
+### 2. Create a Google Cloud project and enable Calendar
 
-### Step 3 - Enable the Google Calendar API
+1. Open [Google Cloud Console](https://console.cloud.google.com/) and sign in with the Google account you want to use for your calendar.
+2. Open the project selector at the top → **New project**. Name it `TDTU Calendar`, then choose **Create**.
+3. Select that project. Keep it selected for every Google Cloud step below.
+4. Go to **APIs & Services → Library**. Search for **Google Calendar API**, open it, and choose **Enable**.
 
-1. Open the navigation menu -> **APIs & Services** -> **Library**.
-2. Search **Google Calendar API** -> **Enable**.
+### 3. Let your Google account test the app
 
-### Step 4 - Configure the OAuth consent screen
+Open **Google Auth Platform**. If you see **Get started**, complete the setup:
 
-1. Navigation menu -> **APIs & Services** -> **OAuth consent screen** (or **Google Auth Platform**).
-2. If prompted, click **Get started** and fill in:
-   - **App name**: anything (e.g. `TDTU Schedule Exporter`)
-   - **User support email** and **Developer contact email**: your email
-3. **Audience / User type**: choose **External**.
-4. Under **Test users** (Audience -> Test users) -> **Add users** -> add **the exact Google account you'll sync with** -> **Save**.
-   - Leaving the app in **Testing** status is fine; **no verification** is needed since only you use it.
-5. *(If there's a Data access / Scopes section)* add `https://www.googleapis.com/auth/calendar.events`. If you skip it, Google still shows this scope on the consent prompt.
+- **App name:** `TDTU Calendar`.
+- **User support email / Contact information:** your email.
+- **Audience:** **External** for a personal Google account.
 
-### Step 5 - Create the OAuth Client ID
+Then open **Audience → Test users → Add users**, add the exact Google email you will use to sync, and save. Leave the app in **Testing**; you do not need to publish the OAuth app for your own testing account.
 
-1. **APIs & Services** -> **Credentials** (or **Google Auth Platform -> Clients**) -> **Create credentials / Create client** -> **OAuth client ID**.
-2. **Application type**: **Web application** (not "Chrome extension").
-3. **Name**: anything.
-4. **Authorized redirect URIs** -> **Add URI** -> paste the Redirect URI from Step 1 (character for character, including the trailing `/`).
-5. **Create**. A dialog shows your **Client ID**, like `123456789-abcdefg.apps.googleusercontent.com` -> copy it.
-   *(Ignore the "Client secret"; the extension doesn't use it.)*
+Under **Data Access → Add or remove scopes**, add:
+
+```text
+https://www.googleapis.com/auth/calendar.events
+```
+
+If Google shows a list of scopes, search for `calendar.events` and select it. If needed, paste the full address under **Manually add scopes**, then choose **Update / Save**.
+
+This lets the extension manage calendar events. It does not request Gmail or Contacts access.
 
 > [!NOTE]
-> New configurations can take a few minutes to take effect. If you get an error right away, wait 5 minutes and retry.
+> Google's menus can vary. Older pages call this **APIs & Services → OAuth consent screen**. Look for the same Audience, Test users, and Scopes settings.
 
-### Step 6 - Paste the Client ID into the extension
+### 4. Create the Client ID
 
-Open **Settings** -> **Google Calendar** -> paste into **Google OAuth Client ID**. (Saved automatically.)
+1. Go to **Google Auth Platform → Clients → Create client**. On the older interface, use **APIs & Services → Credentials → Create credentials → OAuth client ID**.
+2. For **Application type**, choose **Web application**. Use this even though you are setting up a browser extension.
+3. Give it a name, such as `TDTU browser`.
+4. Find **Authorized redirect URIs** → **Add URI**. Paste the Redirect URI you copied in step 1, including the final `/`.
+5. Leave **Authorized JavaScript origins** empty; this extension does not require an entry there.
+6. Choose **Create**, then copy the **Client ID** ending in `.apps.googleusercontent.com`. You can also find it later by opening this client in the Clients list.
 
-### Step 7 - (Recommended) Create a dedicated calendar
+If Google also shows a **Client secret**, ignore it. Do not paste it into the extension.
 
-A dedicated calendar lets you wipe the whole semester in one action.
+### 5. Paste it into the extension
 
-1. Open [calendar.google.com](https://calendar.google.com) on a computer.
-2. Next to **Other calendars** click **+** -> **Create new calendar** -> name it (e.g. `TDTU Schedule`) -> **Create calendar**.
-3. Hover the new calendar -> **Options** -> **Settings and sharing** -> scroll to **Integrate calendar** -> copy the **Calendar ID** (like `abc123@group.calendar.google.com`).
-4. Paste it into **Calendar ID** in the extension's Settings.
+Return to extension **Settings → Connect Google Calendar**:
 
-Leave `primary` to use your main calendar. The calendar must belong to the signed-in account (or be shared with edit access).
+- Paste the copied value into **Google OAuth Client ID**. The eye button shows or hides the field.
+- Leave **Calendar ID** as `primary`, or choose a separate calendar using the instructions below.
+- Wait for **Saved**. There is no Save button.
 
-### Step 8 - First sync
+**Using several browsers?** Copy the Redirect URI from each installation and add each one to the same OAuth client's **Authorized redirect URIs**. You can then use that Client ID in each installation. If you move the Chrome/Edge extension folder, re-copy its Redirect URI and update Google Cloud if it changed.
 
-1. Open the timetable page -> click **Lấy lịch học** -> **Đồng bộ Google Calendar (có màu)**.
-2. A Google sign-in window opens -> choose the account you added as a Test user.
-3. Google warns **"Google hasn't verified this app"** (it's your own app) -> **Advanced** -> **Go to ... (unsafe)** -> **Continue / Allow**.
-4. The popup may close when the sign-in window opens. This is normal. The sync runs in the background; the extension icon shows a badge when done, and reopening the popup shows the result.
+### 6. Sync for the first time
 
-Re-sync any time: existing events are **updated** (room, time, color...) or skipped if unchanged instead of duplicated.
+1. Return to the TDTU timetable and select your week.
+2. Open the extension → **Get schedule** → **Sync to Google Calendar**.
+3. In the Google window, choose the account you added to **Test users**, review the requested access, and allow it.
+4. If Google shows **“Google hasn't verified this app”**, check that the app name and account match the project you just created. For your own test app, the continuation is usually **Advanced → Go to [your app name] (unsafe)**.
+5. The popup may close during sign-in. Sync continues in the background; reopen the extension to see its status.
 
-> [!WARNING]
-> If you previously imported an `.ics` into the same calendar, **delete those old events** (or use the new calendar from Step 7) to avoid duplicates.
+If a new Google Cloud setting has not taken effect yet, wait a few minutes and retry.
 
-> [!NOTE]
-> **Auto-cleanup:** on every sync, the extension deletes events **it created itself** in that week that are no longer in the new list (a class newly marked "GV báo vắng", newly blacklisted, or moved to another time). Events you created yourself or imported from `.ics` are **never deleted**. Only the weeks present on the page being read are cleaned; other weeks are untouched.
+### Optional: keep school events in a separate calendar
 
-### Troubleshooting
+A separate calendar makes it easier to hide or remove a semester without affecting your personal events.
 
-| Error | Cause & fix |
+1. Open [Google Calendar](https://calendar.google.com/) on a computer.
+2. Next to **Other calendars**, choose **+ → Create new calendar**. Name it `TDTU Schedule`.
+3. Open that calendar's **Settings and sharing → Integrate calendar**.
+4. Copy its **Calendar ID** and paste it into the extension's **Calendar ID** field, replacing `primary`.
+
+Do not paste the calendar's public URL or an ICS subscription link into this field. The calendar must belong to your signed-in account or allow that account to edit events.
+
+## Settings and sync behavior
+
+Open the gear button in the popup. Changes save automatically.
+
+- **Appearance:** English/Vietnamese and animation preferences. System reduced-motion preferences are respected.
+- **Subject colors:** assign a Google Calendar color by subject code, or choose a default for unassigned subjects. Google supports 11 event colors.
+- **Class filters:** hide classes marked `GV báo vắng` (lecturer absent). This is enabled by default.
+- **Hidden subjects:** exclude a subject code or a keyword in its name. The placeholder subject `000000` is hidden by default.
+- **Google Calendar:** your OAuth Client ID, destination Calendar ID, and installation-specific Redirect URI.
+
+Sync updates existing extension events and skips unchanged ones. It removes extension-created events that are no longer in the fetched week, for example after a class becomes hidden, absent, or rescheduled. It does not remove events you created yourself or imported from ICS. Overlapping classes produce a warning; both remain eligible for export and sync.
+
+If you already imported an ICS file into the same calendar, those imported events are separate from synced events. Remove the old imported copies or use a separate calendar to avoid seeing both.
+
+## Troubleshooting
+
+| What you see | What to check |
 |---|---|
-| `Error 400: redirect_uri_mismatch` | The Redirect URI in Google Cloud differs from the one in Settings. Re-copy it exactly (including the trailing `/`). If you moved the extension folder, the ID changed. |
-| `Error 403: access_denied` / "has not completed verification" | The signed-in account isn't in **Test users** (Step 4). |
-| `HTTP 403 - Google Calendar API has not been used...` | Calendar API isn't **enabled** in the same project as the Client ID (Step 3). Wait a few minutes after enabling. |
-| `HTTP 404 - Not Found` | Wrong **Calendar ID**, or the calendar isn't in this account. Try `primary`. |
-| `HTTP 401` | Token expired / rejected; click sync again to sign in afresh. |
-| `Chưa nhập Google Client ID` | Client ID not set in Settings (Step 6). |
-| `Không lấy được token đăng nhập Google` | You closed the sign-in window early, or the Client ID type isn't **Web application**. |
-| Events have no color | Subject isn't in the color list, so the default (Graphite) applies. Add it in Settings. |
-| Code `000000` / English class missing | It's in the default Blacklist; remove that row in Settings to export it. |
+| `redirect_uri_mismatch` | Copy Redirect URI from this installation's Settings into **Authorized redirect URIs**, not JavaScript origins. Include the final `/`. |
+| `access_denied` or app not verified | Use the exact account listed under **Audience → Test users**. Check that the client and consent screen belong to the same project. |
+| Calendar API not enabled / HTTP 403 | Enable **Google Calendar API** in the project that owns your Client ID. Wait a few minutes, then retry. |
+| Missing or invalid Client ID | Use the value ending in `.apps.googleusercontent.com`, not an API key, Client secret, project ID, or Calendar ID. |
+| HTTP 404 | Check the destination Calendar ID and the account's edit access. Try `primary` to check your main calendar. |
+| HTTP 401 | Start sync again and complete Google sign-in. |
+| Subject or class missing | Check Hidden subjects and the absent-lecturer filter. Remove `000000` from Hidden subjects if you want the English-class placeholder. |
+| Colors missing after ICS import | Use direct Calendar sync; Google does not keep per-event colors from ICS. |
+| No classes found | Wait for the TDTU timetable to finish loading, then retry on its weekly schedule page. |
 
----
+## Data and limitations
 
-## Privacy & security
+The extension reads the timetable you request and stores preferences locally in your browser. It has no application server. Google sign-in and Calendar requests are used when you start sync; the access token is not persisted. You can revoke access from [your Google account's connections](https://myaccount.google.com/permissions).
 
-- The extension runs **entirely in your browser**; there's no server of its own and no data is sent anywhere except the **Google Calendar API** (when you click sync).
-- Permissions used:
-  - `activeTab`, `scripting` + `stdportal.tdtu.edu.vn`, `lichhoc-lichthi.tdtu.edu.vn`: read the timetable you have open.
-  - `storage`: keep Settings (colors, blacklist, Client ID, Calendar ID) in the browser's `storage.local`.
-  - `identity` + `https://www.googleapis.com/*`: Google sign-in and Calendar API calls.
-- OAuth scope: only `https://www.googleapis.com/auth/calendar.events` (create / edit / delete events; the extension only deletes events whose id it generated itself).
-- The access token is used only during sync and is **not stored**.
-- The timetable is **not cached**.
-- Revoke access any time at <https://myaccount.google.com/permissions>.
-- See [SECURITY.md](SECURITY.md) for the full threat model and vulnerability reporting policy.
-
----
-
-## Known limitations
-
-- Reads only the **week currently displayed**.
-- Only Google Calendar's **11 event colors**.
-- If TDTU changes its page layout, the scraper may need updating.
-- No custom reminders; the calendar's default reminders apply.
+Only the displayed week is read. If TDTU changes its page structure, schedule reading may need an update. Events use the destination calendar's default reminders.
 
 ## License
 
 [MIT](LICENSE). Based on [MinhQuan06/TDTU-extensions](https://github.com/MinhQuan06/TDTU-extensions).
-Not affiliated with or endorsed by TDTU or Google.
