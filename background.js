@@ -41,6 +41,7 @@ ext.runtime.onMessage.addListener((message, sender, sendResponse) => {
 function setSync(state, msg, badge) {
   ext.storage.local.set({ syncStatus: { state, msg, ts: Date.now() } });
   if (badge) ext.action.setBadgeText({ text: state === 'done' ? '✓' : '!' });
+  else if (state === 'running') ext.action.setBadgeText({ text: '' });
 }
 
 // ── Kiểm tra dữ liệu nhận từ popup ──────────────────────────────────────────
@@ -123,25 +124,51 @@ async function api(token, method, path, body) {
   return res.json();
 }
 
-// Xoá các sự kiện DO EXTENSION TẠO (id đúng mẫu tdtu + 40 hex) trong khoảng tuần
-// mà không còn nằm trong danh sách mới (lớp báo vắng / blacklist / đổi giờ).
-// Sự kiện bạn tự tạo hoặc import từ .ics (id khác) không bao giờ bị đụng tới.
-async function cleanupStale(token, keepIds, range) {
-  const stale = [];
+// So sánh sự kiện trên Google Calendar với dữ liệu mới để bỏ qua nếu không có gì thay đổi
+function isSameEvent(ex, body) {
+  if (!ex || ex.status !== 'confirmed') return false;
+  if ((ex.summary || '') !== (body.summary || '')) return false;
+  if ((ex.location || '') !== (body.location || '')) return false;
+  if ((ex.description || '') !== (body.description || '')) return false;
+  if (String(ex.colorId || '') !== String(body.colorId || '')) return false;
+  const s = ex.start && ex.start.dateTime, e = ex.end && ex.end.dateTime;
+  if (typeof s !== 'string' || typeof e !== 'string') return false;
+  return Date.parse(s) === Date.parse(body.start.dateTime + '+07:00') &&
+         Date.parse(e) === Date.parse(body.end.dateTime + '+07:00');
+}
+
+// Đọc danh sách sự kiện do extension tạo trong khoảng tuần (kể cả sự kiện từng bị xoá)
+async function fetchExisting(token, range) {
+  const map = new Map();
   let pageToken = '';
   do {
     const q = new URLSearchParams({
       timeMin: range.from + 'T00:00:00+07:00',
       timeMax: range.to + 'T00:00:00+07:00',
-      singleEvents: 'true', maxResults: '250', fields: 'items(id),nextPageToken'
+      singleEvents: 'true',
+      showDeleted: 'true',
+      maxResults: '250',
+      fields: 'items(id,status,summary,location,description,start,end,colorId),nextPageToken'
     });
     if (pageToken) q.set('pageToken', pageToken);
     const res = await api(token, 'GET', '?' + q.toString());
-    for (const ev of (res.items || [])) {
-      if (ev && typeof ev.id === 'string' && OWN_ID_RE.test(ev.id) && !keepIds.has(ev.id)) stale.push(ev.id);
+    for (const ev of (res && res.items || [])) {
+      if (ev && typeof ev.id === 'string' && OWN_ID_RE.test(ev.id)) map.set(ev.id, ev);
     }
-    pageToken = res.nextPageToken || '';
+    pageToken = (res && res.nextPageToken) || '';
   } while (pageToken);
+  return map;
+}
+
+// Xoá các sự kiện DO EXTENSION TẠO (id đúng mẫu tdtu + 40 hex) trong khoảng tuần
+// mà không còn nằm trong danh sách mới (lớp báo vắng / blacklist / đổi giờ).
+// Sự kiện bạn tự tạo hoặc import từ .ics (id khác) không bao giờ bị đụng tới.
+async function cleanupStale(token, keepIds, range, existingMap) {
+  const map = existingMap || await fetchExisting(token, range);
+  const stale = [];
+  for (const [id, ev] of map.entries()) {
+    if (ev.status !== 'cancelled' && !keepIds.has(id)) stale.push(id);
+  }
 
   // Chốt an toàn: nếu số sự kiện cần xoá bất thường thì dừng, không xoá gì cả
   if (stale.length > MAX_DELETE) {
@@ -176,13 +203,32 @@ async function syncToGoogle(rawEvents, rawRange) {
   setSync('running', 'Đang đăng nhập Google...');
   const token = await getToken();
 
-  let created = 0, updated = 0, deleted = 0;
+  let existingMap = null;
+  if (range) {
+    setSync('running', 'Đang kiểm tra lịch hiện tại...');
+    existingMap = await fetchExisting(token, range);
+  }
+
+  let created = 0, updated = 0, unchanged = 0, deleted = 0;
   const keepIds = new Set();
   for (let i = 0; i < events.length; i++) {
     setSync('running', 'Đang đồng bộ ' + (i + 1) + '/' + events.length + '...');
     const id = await eventId(events[i].key);
     keepIds.add(id);
     const body = Object.assign({ id }, events[i].body);
+    const ex = existingMap ? existingMap.get(id) : null;
+
+    if (ex && typeof ex.status === 'string') {
+      if (isSameEvent(ex, body)) {
+        unchanged++;
+        continue;
+      }
+      body.status = 'confirmed';
+      await api(token, 'PUT', '/' + id, body);
+      updated++;
+      continue;
+    }
+
     try {
       await api(token, 'POST', '', body);
       created++;
@@ -196,7 +242,9 @@ async function syncToGoogle(rawEvents, rawRange) {
   }
   if (range) {
     setSync('running', 'Đang dọn sự kiện cũ...');
-    deleted = await cleanupStale(token, keepIds, range);
+    deleted = await cleanupStale(token, keepIds, range, existingMap);
   }
-  setSync('done', 'Xong ✓ Tạo mới ' + created + ', cập nhật ' + updated + ', xoá ' + deleted + ' sự kiện', true);
+  const summary = 'Xong ✓ Tạo mới ' + created + ', cập nhật ' + updated +
+    (unchanged ? ', giữ nguyên ' + unchanged : '') + ', xoá ' + deleted + ' sự kiện';
+  setSync('done', summary, true);
 }

@@ -137,6 +137,11 @@ async function addMissingToSettings(data) {
     n++;
   });
   await ext.storage.local.set({ settings: SETTINGS });
+  if (scheduleData.length) renderSchedule(scheduleData);
+}
+
+function fmtShortDate(d) {
+  return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
 }
 
 function renderSchedule(all) {
@@ -144,6 +149,20 @@ function renderSchedule(all) {
   const data = all.filter(function(c) { return !isExcluded(c); });
   const hidden = all.length - data.length;
   countBadge.textContent = data.length;
+
+  // Hiển thị khoảng ngày của tuần đang xem ở tiêu đề
+  const labelEl = document.getElementById('scheduleLabel');
+  if (labelEl && all.length) {
+    const r = weekRange(all);
+    const mon = new Date(r.from + 'T00:00:00');
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    labelEl.textContent = 'Lịch học · ' + fmtShortDate(mon) + ' – ' + fmtShortDate(sun) + ' ';
+    labelEl.appendChild(countBadge);
+  }
+
+  exportICS.disabled = !data.length;
+  exportExcel.disabled = !data.length;
+
   let hb = document.getElementById('hiddenNote');
   if (!hb) {
     hb = document.createElement('div'); hb.id = 'hiddenNote';
@@ -165,14 +184,14 @@ function renderSchedule(all) {
     warn.appendChild(document.createTextNode(' (vẫn được xuất / đồng bộ cả hai):'));
     overlaps.forEach(function(o) {
       var d = o.a.exactDate ? new Date(o.a.exactDate) : null;
-      var when = (days[o.a.dayOfWeek] || '') + (d ? ' ' + String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') : '');
+      var when = (days[o.a.dayOfWeek] || '') + (d ? ' ' + fmtShortDate(d) : '');
       warn.appendChild(h('div', { style: 'margin-top:4px',
         text: '• ' + when + ' · tiết ' + o.from + '–' + o.to + ': ' + o.a.name + ' ↔ ' + o.b.name }));
     });
   } else { warn.style.display = 'none'; warn.textContent = ''; }
   lastOverlapCount = overlaps.length;
   const missing = {};
-  data.forEach(function(cls) { if (!colorForClass(cls).assigned) missing[cls.code || '(không có mã)'] = cls.name; });
+  data.forEach(function(cls) { if (cls.code && !colorForClass(cls).assigned) missing[cls.code] = cls.name; });
   const missKeys = Object.keys(missing);
   const hint = document.getElementById('colorHint');
   if (missKeys.length) {
@@ -186,6 +205,14 @@ function renderSchedule(all) {
     addBtn.addEventListener('click', function() { addMissingToSettings(data); });
     hint.appendChild(addBtn);
   } else { hint.style.display = 'none'; }
+
+  if (!data.length && all.length) {
+    classList.appendChild(h('div', {
+      style: 'padding:12px;text-align:center;color:var(--text-dim);font-size:12px;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);margin-bottom:8px',
+      text: 'Tất cả lớp trong tuần này đang được ẩn. Bạn vẫn có thể bấm Đồng bộ Google Calendar để tự động dọn sự kiện cũ của tuần này.'
+    }));
+  }
+
   data.forEach(function(cls) {
     const pt  = PERIOD_TIMES[cls.periodStart] || {s:'?',e:'?'};
     const pte = PERIOD_TIMES[cls.periodEnd]   || pt;
@@ -195,7 +222,8 @@ function renderSchedule(all) {
     card.style.borderLeft = '4px solid ' + col.hex;
     var badge = function(kind, text, style) { return h('span', { 'class': 'badge' + (kind ? ' ' + kind : ''), style: style || '', text: text }); };
     var meta = h('div', { 'class': 'class-meta' });
-    meta.appendChild(badge('day',  '📆 ' + (days[cls.dayOfWeek] || 'N/A')));
+    var dayLabel = (days[cls.dayOfWeek] || 'N/A') + (cls.exactDate ? ' (' + fmtShortDate(new Date(cls.exactDate)) + ')' : '');
+    meta.appendChild(badge('day',  '📆 ' + dayLabel));
     meta.appendChild(badge('time', '⏰ ' + pt.s + '–' + pte.e + ' (Tiết ' + cls.periodStart + '–' + cls.periodEnd + ')'));
     if (cls.room)  meta.appendChild(badge('room', '📍 ' + cls.room));
     if (cls.group) meta.appendChild(badge('', '👥 ' + cls.group, 'color:#67e8f9;border-color:rgba(103,232,249,.25)'));
@@ -246,12 +274,21 @@ function scrapeWeeklyCalendar() {
       schedTable = tables[t]; break;
     }
   }
-  if (!schedTable) return [{ name: 'DEBUG: Không tìm thấy bảng lịch', dayOfWeek:1, periodStart:1, periodEnd:1, room:'', group:'', code:'', note:'' }];
+  if (!schedTable) return [];
 
   // ── 2. Map column index → dayOfWeek + actual date from page header ──────────
   var colDay  = {}; // colIdx → 0..6
   var colDate = {}; // colIdx → Date (actual date from header, e.g. 16/03/2026)
   var headerCells = schedTable.rows[0].cells;
+  var now = new Date();
+  var baseYear = null, firstMonth = null;
+  // Đọc năm chính xác từ nút tuần trên trang TDTU (vd: value="09/11/2026 - 15/11/2026") nếu có
+  var weekBtn = typeof document.getElementById === 'function' ? document.getElementById('ThoiKhoaBieu1_btnTuanHienTai') : null;
+  var wm = weekBtn && String(weekBtn.value || weekBtn.textContent || '').match(/(\d{1,2})\/(\d{2})\/(\d{4})\s*-\s*(\d{1,2})\/(\d{2})\/(\d{4})/);
+  if (wm) {
+    firstMonth = parseInt(wm[2], 10);
+    baseYear = parseInt(wm[3], 10);
+  }
   for (var c = 0; c < headerCells.length; c++) {
     var ht  = headerCells[c].textContent;
     var htl = ht.toLowerCase();
@@ -265,8 +302,25 @@ function scrapeWeeklyCalendar() {
     // Extract actual date like "(17/03)" or "(17/03/2026)" from header
     var dm = ht.match(/\((\d{1,2})\/(\d{2})(?:\/(\d{4}))?\)/);
     if (dm && colDay[c] !== undefined) {
-      var yr = dm[3] ? parseInt(dm[3]) : new Date().getFullYear();
-      colDate[c] = new Date(yr, parseInt(dm[2]) - 1, parseInt(dm[1]));
+      var dayNum = parseInt(dm[1], 10);
+      var monNum = parseInt(dm[2], 10);
+      var yr;
+      if (dm[3]) {
+        yr = parseInt(dm[3], 10);
+      } else {
+        if (baseYear === null) {
+          var curY = now.getFullYear();
+          var cand = new Date(curY, monNum - 1, dayNum);
+          // Nếu ngày trong bảng lệch hơn ~6 tháng so với hiện tại → điều chỉnh năm ±1
+          if (cand.getTime() - now.getTime() > 180 * 86400000) curY--;
+          else if (now.getTime() - cand.getTime() > 180 * 86400000) curY++;
+          baseYear = curY;
+          firstMonth = monNum;
+        }
+        // Xử lý tuần giao thừa: đầu tuần tháng 12, cuối tuần sang tháng 1 năm sau
+        yr = (firstMonth === 12 && monNum === 1) ? baseYear + 1 : baseYear;
+      }
+      colDate[c] = new Date(yr, monNum - 1, dayNum);
     }
   }
 
@@ -371,9 +425,10 @@ function scrapeWeeklyCalendar() {
     // Note (so khớp không dấu: "GV báo vắng" / "GV dạy bù")
     var plain = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
     var absent = /gv\s+bao\s+vang/.test(plain);
-    var note = '';
-    if (absent)                          note = 'GV báo vắng';
-    if (/gv\s+day\s+bu/.test(plain))     note = 'GV dạy bù';
+    var notes = [];
+    if (absent)                          notes.push('GV báo vắng');
+    if (/gv\s+day\s+bu/.test(plain))     notes.push('GV dạy bù');
+    var note = notes.join(', ');
 
     var periodEnd = periodStart + rowspan - 1;
 
@@ -419,6 +474,14 @@ function scrapeWeeklyCalendar() {
     }
   }
 
+  // Sắp xếp theo thứ tự thời gian: Thứ 2 → CN (hoặc ngày thực tế), sau đó theo tiết bắt đầu
+  results.sort(function(a, b) {
+    if (a.exactDate && b.exactDate && a.exactDate !== b.exactDate) return a.exactDate - b.exactDate;
+    var da = (a.dayOfWeek + 6) % 7, db = (b.dayOfWeek + 6) % 7;
+    if (da !== db) return da - db;
+    return a.periodStart - b.periodStart;
+  });
+
   return results;
 }
 
@@ -460,34 +523,40 @@ function generateICS(data) {
     var y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'), d=String(date.getDate()).padStart(2,'0');
     return y+m+d+'T'+hhmm+'00';
   }
+  function icsUid(cls, dtStart, dtEnd, idx) {
+    var raw = [cls.code || '', cls.name || '', cls.group || '', dtStart, dtEnd].join('|');
+    var h1 = 0x811c9dc5, h2 = 0x01000193;
+    for (var k = 0; k < raw.length; k++) {
+      var ch = raw.charCodeAt(k);
+      h1 = Math.imul(h1 ^ ch, 0x01000193) >>> 0;
+      h2 = Math.imul(h2 ^ (ch + k), 0x85ebca6b) >>> 0;
+    }
+    var slug = String(cls.code || idx).replace(/[^A-Za-z0-9]/g, '').toLowerCase() || String(idx);
+    return 'tdtu-' + slug + '-' + dtStart + '-' + h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0') + '@tdtu.edu.vn';
+  }
 
+  var dtStamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
   var lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//TDTU Schedule Exporter//VI',
     'CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:Lich hoc TDTU','X-WR-TIMEZONE:Asia/Ho_Chi_Minh'];
 
   data.forEach(function(cls, i) {
-    // Use the exact date scraped from the page header
-    var base = cls.exactDate ? new Date(cls.exactDate) : null;
-    if (!base) {
-      // Fallback: find the date of this day in current week (no shift)
-      var today = new Date();
-      var todayDow = today.getDay(); // 0=Sun
-      var diff = cls.dayOfWeek - todayDow; // can be negative (earlier this week)
-      base = new Date(today);
-      base.setDate(today.getDate() + diff);
-    }
+    var base = classBaseDate(cls);
 
     var ts = (PT[cls.periodStart] || PT[1]).s;
     var te = (PT[cls.periodEnd]   || PT[cls.periodStart] || PT[1]).e;
+    var dtStart = fmtDT(base, ts);
+    var dtEnd   = fmtDT(base, te);
 
     var desc = buildDescription(cls);
     var col  = colorForClass(cls);
 
     // Single occurrence — NO RRULE
     lines.push('BEGIN:VEVENT',
-      'UID:tdtu-'+i+'-'+Date.now()+'@tdtu.edu.vn',
-      'DTSTART;TZID=Asia/Ho_Chi_Minh:'+fmtDT(base,ts),
-      'DTEND;TZID=Asia/Ho_Chi_Minh:'+fmtDT(base,te),
-      'SUMMARY:'+icsEscape(cls.name)
+      'UID:' + icsUid(cls, dtStart, dtEnd, i),
+      'DTSTAMP:' + dtStamp,
+      'DTSTART;TZID=Asia/Ho_Chi_Minh:' + dtStart,
+      'DTEND;TZID=Asia/Ho_Chi_Minh:' + dtEnd,
+      'SUMMARY:' + icsEscape(cls.name)
     );
     if (cls.room) lines.push('LOCATION:'+icsEscape(cls.room));
     if (desc)     lines.push('DESCRIPTION:'+icsEscape(desc));
@@ -602,14 +671,19 @@ function csvCell(v) {
 function generateCSV(data) {
   var days = ['Chủ nhật','Thứ 2','Thứ 3','Thứ 4','Thứ 5','Thứ 6','Thứ 7'];
   var PT = PERIOD_TIMES;
-  var header = ['Tên môn học','Tên tiếng Anh','Mã môn','Thứ','Tiết bắt đầu','Tiết kết thúc','Giờ bắt đầu','Giờ kết thúc','Phòng','Nhóm','Ghi chú'];
+  var header = ['Tên môn học','Tên tiếng Anh','Mã môn','Thứ','Ngày','Tiết bắt đầu','Tiết kết thúc','Giờ bắt đầu','Giờ kết thúc','Phòng','Nhóm','Ghi chú'];
   var rows = [header];
   data.forEach(function(c) {
     var ts = (PT[c.periodStart]||{s:'',e:''}).s;
     var te = (PT[c.periodEnd]  ||{s:'',e:''}).e;
+    var base = classBaseDate(c);
+    var dateStr = String(base.getDate()).padStart(2,'0') + '/' +
+                  String(base.getMonth()+1).padStart(2,'0') + '/' +
+                  base.getFullYear();
     rows.push([
       c.name||'', c.engName||'', c.code||'',
       days[c.dayOfWeek]||'',
+      dateStr,
       c.periodStart||'', c.periodEnd||'',
       ts, te,
       c.room||'', c.group||'', c.note||''
@@ -630,6 +704,7 @@ function downloadFile(name, content, mime) {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 (async function() {
+  if (ext.action && ext.action.setBadgeText) ext.action.setBadgeText({ text: '' });
   await loadSettings();
   document.getElementById('settingsBtn').addEventListener('click', function() {
     ext.runtime.openOptionsPage();

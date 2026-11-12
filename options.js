@@ -21,6 +21,19 @@ function palette(selected, onPick) {
   return wrap;
 }
 
+function markDuplicates() {
+  const counts = {};
+  rows.forEach(r => { if (r.code) counts[r.code] = (counts[r.code] || 0) + 1; });
+  const inputs = document.querySelectorAll('#subjects .code');
+  rows.forEach((r, i) => {
+    const inp = inputs[i];
+    if (!inp) return;
+    const dup = r.code && counts[r.code] > 1;
+    inp.style.borderColor = dup ? 'var(--err)' : '';
+    inp.title = dup ? 'Mã môn bị trùng — dòng bên dưới sẽ ghi đè dòng trên' : '';
+  });
+}
+
 function render() {
   const box = $('subjects');
   box.innerHTML = '';
@@ -31,7 +44,7 @@ function render() {
     const code = document.createElement('input');
     code.type = 'text'; code.className = 'code'; code.placeholder = 'Mã môn';
     code.value = r.code; code.spellcheck = false;
-    code.addEventListener('input', () => { r.code = code.value.trim(); save(); });
+    code.addEventListener('input', () => { r.code = code.value.trim(); markDuplicates(); save(); });
 
     const name = document.createElement('input');
     name.type = 'text'; name.className = 'name'; name.placeholder = 'Tên môn (tuỳ chọn)';
@@ -79,9 +92,11 @@ function render() {
 
   const dp = $('defaultPalette');
   dp.replaceWith(Object.assign(palette(defaultColor, k => { defaultColor = k; save(); render(); }), { id: 'defaultPalette' }));
+  markDuplicates();
 }
 
 let timer;
+let savingSelf = false;
 function save() {
   clearTimeout(timer);
   timer = setTimeout(async () => {
@@ -91,13 +106,18 @@ function save() {
       subjectColors[r.code] = r.color;
       if (r.name) subjectNames[r.code] = r.name;
     });
-    await ext.storage.local.set({ settings: {
-      subjectColors, subjectNames, defaultColor,
-      blacklist: blacklist.filter(b => b.match),
-      ignoreAbsent: $('ignoreAbsent').checked,
-      clientId: $('clientId').value.trim(),
-      calendarId: $('calendarId').value.trim() || 'primary'
-    }});
+    savingSelf = true;
+    try {
+      await ext.storage.local.set({ settings: {
+        subjectColors, subjectNames, defaultColor,
+        blacklist: blacklist.filter(b => b.match),
+        ignoreAbsent: $('ignoreAbsent').checked,
+        clientId: $('clientId').value.trim(),
+        calendarId: $('calendarId').value.trim() || 'primary'
+      }});
+    } finally {
+      setTimeout(() => { savingSelf = false; }, 100);
+    }
     $('saved').classList.add('show');
     setTimeout(() => $('saved').classList.remove('show'), 1200);
   }, 350);
@@ -118,8 +138,8 @@ function loadIntoUI(s) {
 $('addRow').addEventListener('click', () => {
   rows.push({ code: '', name: '', color: 'lavender' });
   render();
-  const inputs = document.querySelectorAll('.code');
-  inputs[inputs.length - 1].focus();
+  const inputs = document.querySelectorAll('#subjects .code');
+  if (inputs.length) inputs[inputs.length - 1].focus();
 });
 
 $('addBlack').addEventListener('click', () => {
@@ -152,4 +172,9 @@ $('calendarId').addEventListener('input', save);
 (async function init() {
   $('redirect').value = ext.identity.getRedirectURL();
   loadIntoUI(await loadSettings());
+  ext.storage.onChanged.addListener(async (ch, area) => {
+    if (area === 'local' && ch.settings && !savingSelf) {
+      loadIntoUI(await loadSettings());
+    }
+  });
 })();
