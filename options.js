@@ -31,7 +31,7 @@ function palette(selected, onPick) {
 }
 
 function markDuplicates() {
-  const counts = {};
+  const counts = Object.create(null);
   rows.forEach(r => { if (r.code) counts[r.code] = (counts[r.code] || 0) + 1; });
   const inputs = document.querySelectorAll('#subjects .code');
   rows.forEach((r, i) => {
@@ -120,7 +120,7 @@ let savingSelf = false;
 function save() {
   clearTimeout(timer);
   timer = setTimeout(async () => {
-    const subjectColors = {}, subjectNames = {};
+    const subjectColors = Object.create(null), subjectNames = Object.create(null);
     rows.forEach(r => {
       if (!r.code) return;
       subjectColors[r.code] = r.color;

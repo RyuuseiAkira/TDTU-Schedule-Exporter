@@ -23,7 +23,7 @@ const GOOGLE_COLORS = {
 // Chấp nhận tên ('Tomato', 'tomato') hoặc số (11, '11'); sai → màu mặc định
 function lookupColor(value) {
   const v = String(value == null ? '' : value).trim().toLowerCase();
-  if (GOOGLE_COLORS[v]) return GOOGLE_COLORS[v];
+  if (Object.prototype.hasOwnProperty.call(GOOGLE_COLORS, v)) return GOOGLE_COLORS[v];
   for (const k in GOOGLE_COLORS) if (GOOGLE_COLORS[k].id === v) return GOOGLE_COLORS[k];
   return null;
 }
@@ -62,14 +62,14 @@ function sanitizeSettings(raw) {
   const out = JSON.parse(JSON.stringify(DEFAULTS));
   if (!isPlainObj(raw)) return out;
   if (isPlainObj(raw.subjectColors)) {
-    out.subjectColors = {};
+    out.subjectColors = Object.create(null);
     Object.keys(raw.subjectColors).slice(0, 200).forEach(function(k) {
       const code = cleanStr(k, 16);
       if (code && lookupColor(raw.subjectColors[k])) out.subjectColors[code] = String(raw.subjectColors[k]).toLowerCase();
     });
   }
   if (isPlainObj(raw.subjectNames)) {
-    out.subjectNames = {};
+    out.subjectNames = Object.create(null);
     Object.keys(raw.subjectNames).slice(0, 200).forEach(function(k) {
       const code = cleanStr(k, 16), n = cleanStr(raw.subjectNames[k], 100);
       if (code && n) out.subjectNames[code] = n;
@@ -122,7 +122,7 @@ function classBaseDate(cls) {
   if (cls.exactDate) return new Date(cls.exactDate);
   const today = new Date();
   const base = new Date(today);
-  base.setDate(today.getDate() + (cls.dayOfWeek - today.getDay()));
+  base.setDate(today.getDate() - ((today.getDay() + 6) % 7) + ((cls.dayOfWeek + 6) % 7));
   return base;
 }
 

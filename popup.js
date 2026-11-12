@@ -225,7 +225,7 @@ function renderSchedule(all) {
   } else { warn.style.display = 'none'; }
   lastOverlapCount = weekOverlaps.length;
   renderWeekStrip(all, data);
-  const missing = {};
+  const missing = Object.create(null);
   shown.forEach(function(cls) { if (cls.code && !colorForClass(cls).assigned) missing[cls.code] = cls.name; });
   const missKeys = Object.keys(missing);
   const hint = document.getElementById('colorHint');
@@ -550,18 +550,11 @@ function icsFold(line) {
 }
 
 function generateICS(data) {
-  var PT = {
-     1:{s:'0650',e:'0740'}, 2:{s:'0740',e:'0830'}, 3:{s:'0830',e:'0920'},
-     4:{s:'0930',e:'1020'}, 5:{s:'1020',e:'1110'}, 6:{s:'1110',e:'1200'},
-     7:{s:'1245',e:'1335'}, 8:{s:'1335',e:'1425'}, 9:{s:'1425',e:'1515'},
-    10:{s:'1525',e:'1615'},11:{s:'1615',e:'1705'},12:{s:'1705',e:'1755'},
-    13:{s:'1805',e:'1855'},14:{s:'1855',e:'1945'},15:{s:'1945',e:'2035'},
-    16:{s:'2035',e:'2125'}
-  };
+  var PT = PERIOD_TIMES;
 
   function fmtDT(date, hhmm) {
     var y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'), d=String(date.getDate()).padStart(2,'0');
-    return y+m+d+'T'+hhmm+'00';
+    return y+m+d+'T'+hhmm.replace(':', '')+'00';
   }
   function icsUid(cls, dtStart, dtEnd, idx) {
     var raw = [cls.code || '', cls.name || '', cls.group || '', dtStart, dtEnd].join('|');
@@ -607,7 +600,7 @@ function generateICS(data) {
   });
 
   lines.push('END:VCALENDAR');
-  return lines.map(icsFold).join('\r\n');
+  return lines.map(icsFold).join('\r\n') + '\r\n';
 }
 
 // ─── Đồng bộ Google Calendar (có màu) ─────────────────────────────────────────
