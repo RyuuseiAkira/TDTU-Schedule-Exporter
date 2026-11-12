@@ -46,6 +46,7 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
         scripting: { executeScript: async () => {
           if (window.mode === 'slow') await new Promise(resolve => setTimeout(resolve, 500));
           if (window.mode === 'error') throw Error('Test failure');
+          if (window.mode === 'general') return [{result:{view:'general'}}];
           return [{ result: window.fixture }];
         } }
       };
@@ -75,6 +76,9 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
       await page.locator('#fetchBtn').click();
       assert(await page.locator('#syncGoogle').isDisabled());
       assert(await page.locator('#exportICS').isDisabled());
+      assert(await page.locator('#downloadBtn').isDisabled());
+      assert(await page.locator('.week-day').first().isDisabled());
+      assert(await page.locator('#allDaysBtn').isDisabled());
       await page.waitForFunction(() => !document.querySelector('#fetchBtn').disabled);
       checks++;
       await fetch([]);
@@ -89,11 +93,84 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
       assert(!(await page.locator('#exportBtns').isVisible()));
       assert.equal(await page.locator('.class-card').count(), 0);
       checks++;
+      await page.evaluate(() => { window.mode = 'general'; });
+      await page.locator('#fetchBtn').click();
+      await page.waitForFunction(() => !document.querySelector('#fetchBtn').disabled);
+      assert.match(await page.locator('#workflowHint').innerText(), /See the weekly schedule/);
+      assert(!(await page.locator('#exportBtns').isVisible()));
+      checks++;
       await fetch([base, { ...base, code: '502044', name: 'Tổ chức máy tính', periodEnd: 4 }]);
       assert(await page.locator('#scheduleContainer').evaluate(el => el.open));
       assert(await page.locator('#overlapWarn').isVisible());
+      assert.equal(await page.locator('.week-day').first().locator('.week-day-dot').count(),2);
+      const positions = await page.locator('.week-day').first().locator('.week-day-dot').evaluateAll(els => els.map(el=>el.getBoundingClientRect().y));
+      assert.equal(positions[0], positions[1]);
+      assert(await page.locator('#classList').evaluate(el=>getComputedStyle(el).maxHeight.replace('px','')>=230));
+      assert((await page.locator('#overlapWarn').innerText()).length < 180);
+      assert(!(await page.locator('#overlapWarn').innerText()).includes(base.name));
+      checks++;
       await page.screenshot({ path: path.join(artifactDir, `overlap-${language}.png`), fullPage: true });
       checks++;
+      await fetch([base, { ...base, periodStart:7,periodEnd:9 }, { ...base, code:'502044',dayOfWeek:2,exactDate:new Date(2026,10,10).getTime() }]);
+      const weekEvents = await page.evaluate(() => JSON.stringify(buildGoogleEvents(visibleData())));
+      await page.locator('.week-day').first().click();
+      assert.equal(await page.locator('.class-card').count(),2);
+      assert.equal(await page.locator('#countBadge').innerText(),'2');
+      await page.screenshot({path:path.join(artifactDir,`day-preview-${language}.png`),fullPage:true});
+      assert.equal(await page.locator('.week-day').first().getAttribute('aria-pressed'),'true');
+      assert(await page.locator('.week-day').first().evaluate(el=>el===document.activeElement));
+      await page.keyboard.press('ArrowRight');
+      await page.keyboard.press('Enter');
+      assert.equal(await page.locator('.class-card').count(),1);
+      assert.equal(await page.locator('.week-day').nth(1).getAttribute('aria-pressed'),'true');
+      assert(!(await page.locator('#overlapWarn').isVisible()));
+      await page.locator('.week-day').last().click();
+      assert.equal(await page.locator('.class-card').count(),0);
+      assert.equal(await page.locator('#countBadge').innerText(),'0');
+      assert((await page.locator('#classList').innerText()).length>0);
+      assert(await page.locator('#exportICS').isEnabled());
+      assert(await page.locator('#dayViewHint').isVisible());
+      assert.equal(await page.evaluate(() => JSON.stringify(buildGoogleEvents(visibleData()))),weekEvents);
+      await noOverflow();
+      await page.screenshot({path:path.join(artifactDir,`selected-day-${language}.png`),fullPage:true});
+      await page.locator('#downloadBtn').click();
+      assert(await page.locator('#exportDialog').evaluate(el=>el.open));
+      assert.equal(await page.evaluate(()=>document.activeElement.id),'exportICS');
+      await page.locator('.format-cancel').focus();
+      await page.keyboard.press('Tab');
+      await page.waitForFunction(()=>document.activeElement.id==='exportICS');
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(()=>!document.querySelector('#exportDialog').open && document.activeElement.id==='downloadBtn');
+      checks++;
+      await page.locator('#downloadBtn').click();
+      await page.locator('.format-cancel').click();
+      await page.waitForFunction(()=>!document.querySelector('#exportDialog').open);
+      await page.locator('#downloadBtn').click();
+      await page.mouse.click(2,2);
+      await page.waitForFunction(()=>!document.querySelector('#exportDialog').open);
+      checks++;
+      for (const [id,extension] of [['exportICS','.ics'],['exportExcel','.csv']]) {
+        await page.locator('#downloadBtn').click();
+        await noOverflow();
+        await page.screenshot({path:path.join(artifactDir,`format-chooser-${language}.png`),fullPage:true});
+        const pending = page.waitForEvent('download',{timeout:10000});
+        await page.locator('#'+id).click();
+        const download = await pending;
+        assert(download.suggestedFilename().endsWith(extension));
+        const body = fs.readFileSync(await download.path(),'utf8');
+        if(extension==='.ics') assert.equal((body.match(/BEGIN:VEVENT/g)||[]).length,3);
+        else assert.equal(body.trim().split('\n').length,4);
+        assert(!(await page.locator('#exportDialog').evaluate(el=>el.open)));
+        checks++;
+      }
+      await page.locator('#allDaysBtn').click();
+      assert.equal(await page.locator('.class-card').count(),3);
+      assert.equal(await page.locator('#allDaysBtn').getAttribute('aria-pressed'),'true');
+      assert(!(await page.locator('#dayViewHint').isVisible()));
+      await page.locator('.week-day').first().click();
+      await fetch([base]);
+      assert.equal(await page.locator('#allDaysBtn').getAttribute('aria-pressed'),'true');
+      checks+=5;
       const long = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.repeat(8);
       await fetch([{ ...base, name: long, group: long.slice(0, 60), room: long.slice(0, 100), note: long.slice(0, 100) }]);
       await page.locator('#scheduleLabel').click();
@@ -127,6 +204,15 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     checks++;
     await page.goto('http://ui.test/options.html');
     await page.waitForFunction(() => !!document.querySelector('#redirect').value);
+    assert.equal(await page.locator('.settings-nav [aria-current=location]').getAttribute('href'),'#appearance');
+    for (const section of ['calendar','colors','excluded','appearance']) {
+      await page.locator('.settings-nav a[href="#'+section+'"]').click();
+      await page.waitForFunction(id=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#'+id,section);
+      assert.equal(await page.locator('.settings-nav [aria-current=location]').count(),1);
+    }
+    await page.locator('#classes').evaluate(el=>window.scrollTo(0,scrollY+el.getBoundingClientRect().top-30));
+    await page.waitForFunction(()=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#classes');
+    checks+=2;
     const firstColor = page.locator('#subjects .palette button').first();
     await firstColor.focus();
     await page.keyboard.press('Enter');
@@ -156,6 +242,8 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     for (const width of [320, 390, 1100]) {
       await page.setViewportSize({ width, height: 850 });
       await noOverflow();
+      await page.locator('.settings-nav a[href="#appearance"]').evaluate(el=>el.click());
+      await page.waitForFunction(()=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#appearance');
       await page.screenshot({ path: path.join(artifactDir, `settings-${width}.png`), fullPage: true });
       checks++;
     }

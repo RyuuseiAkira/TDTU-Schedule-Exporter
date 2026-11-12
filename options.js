@@ -243,3 +243,32 @@ function showSettingsNotice(message, error = false) {
   markUIFeedback($('saved'));
   noticeTimer = setTimeout(() => $('saved').classList.remove('show'), error ? 6000 : 1600);
 }
+
+// Keep the navigation location in sync with both anchor clicks and manual scrolling.
+(() => {
+  const links = Array.from(document.querySelectorAll('.settings-nav a'));
+  const sections = links.map(link => document.querySelector(link.getAttribute('href')));
+  function activate(index) {
+    links.forEach((link, i) => {
+      if (i === index) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    });
+  }
+  function updateLocation() {
+    const boundary = Math.min(150, window.innerHeight * .22);
+    let current = 0;
+    sections.forEach((section, i) => { if (section.getBoundingClientRect().top <= boundary) current = i; });
+    activate(current);
+  }
+  let frame = 0;
+  function scheduleLocationUpdate() {
+    if (frame) return;
+    frame = requestAnimationFrame(() => { frame = 0; updateLocation(); });
+  }
+  links.forEach((link, index) => link.addEventListener('click', () => activate(index)));
+  window.addEventListener('scroll', scheduleLocationUpdate, {passive:true});
+  window.addEventListener('resize', scheduleLocationUpdate);
+  window.addEventListener('hashchange', scheduleLocationUpdate);
+  document.fonts?.ready.then(scheduleLocationUpdate);
+  updateLocation();
+})();

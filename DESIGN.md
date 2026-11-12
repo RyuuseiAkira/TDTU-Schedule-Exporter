@@ -18,10 +18,10 @@ A single continuous dark working surface. The user rejected fragmented layouts, 
 
 - Header: Miku head, product name, settings icon. No duplicate product slogan or arbitrary status badge.
 - Workflow: contextual instruction before fetch; selected date range and quiet refresh control once loaded.
-- Week strip: actual seven dates of the fetched week, with active-day dots derived only from visible classes. Decorative and hidden from assistive technology; class rows expose the actual details.
+- Week strip: actual seven dates of the fetched week, with active-day dots derived only from visible classes. Each date is a native button with an accessible label, pressed state, and session-count dots. Selecting it opens that day’s classes. All week restores the complete view. Left/Right/Home/End navigate dates; Enter/Space selects. View selection never filters exports or sync.
 - Class review: collapsed after fetch, collapsible, with a bounded scroll area. Subject color is a small dot, not a thick colored border. Overlap and filter messages remain visible with the review.
-- Save: one full-width Calendar action, actionable Client ID help below it when disconnected, two secondary file-export buttons below. Never nest destination cards.
-- Settings: quiet desktop navigation rail, single content column separated by rules. On narrow screens navigation becomes a horizontal row.
+- Save: one full-width Calendar action, actionable Client ID help below it when disconnected, and one secondary Download schedule button. Its native modal offers ICS and CSV with a clear all-week scope description. Escape, Cancel and backdrop clicks dismiss it; keyboard focus stays within the chooser and returns to Download on close. Never nest destination cards.
+- Settings: quiet desktop navigation rail, single content column separated by rules. The current section has a mint edge, highlighted background and aria-current location state, updated on anchor clicks and scrolling. On narrow screens navigation wraps into rows.
 - Mascot: head-only inline SVG; periodic blink and one brief greeting. Gentle pink/aqua falling music notes form the background. Appearance preference and OS reduced motion disable mascot and background animations.
 
 ## Validation

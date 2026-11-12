@@ -49,13 +49,15 @@ Bản chưa ký này chỉ được cài tạm thời và sẽ bị gỡ khi kh�
 1. Đăng nhập [Student Portal](https://stdportal.tdtu.edu.vn), mở **Thời khoá biểu / Timetable**.
 2. Chọn tuần cần lấy trên trang TDTU.
 3. Mở extension, bấm **Lấy lịch học**.
-4. Mở mục **Lịch học** để kiểm tra các lớp, rồi chọn cách lưu bên dưới.
+4. Mở mục **Lịch học** để kiểm tra các lớp. Bấm **Tải lịch về máy…** rồi chọn định dạng file, hoặc đồng bộ trực tiếp với Google Calendar.
 
 | Lựa chọn | Kết quả | Cần thiết lập Google? |
 |---|---|---|
 | **Ứng dụng lịch (.ics)** | File để nhập vào Google Calendar, Apple Calendar hoặc Outlook | Không |
 | **Bảng tính (.csv)** | File CSV chuẩn UTF-8 để mở bằng Excel hoặc Google Sheets | Không |
 | **Đồng bộ với Google Calendar** | Sự kiện trên lịch Google, giữ màu theo môn đã chọn | Có, làm một lần theo hướng dẫn bên dưới |
+
+Bấm một ngày trên thanh tuần để xem các ca của riêng ngày đó, hoặc chọn **Cả tuần** để xem đầy đủ. Bộ lọc xem này không đổi nội dung xuất file hay đồng bộ: cả hai vẫn lấy toàn bộ tuần sau khi áp dụng bộ lọc môn học và báo vắng.
 
 Extension chỉ đọc tuần đang hiển thị trên trang TDTU. Muốn lấy tuần khác, chuyển tuần trên trang rồi bấm **Làm mới**. Google Calendar không giữ màu theo môn khi nhập file ICS; muốn giữ màu, hãy dùng đồng bộ trực tiếp.
 

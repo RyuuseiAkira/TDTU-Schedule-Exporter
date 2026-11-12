@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TDTU Schedule Exporter</title><link rel="stylesheet" href="theme.css"></head>
 <body class="popup-page"><div class="ambient-notes" aria-hidden="true"><span>♫</span><span>♪</span><span>♫</span><span>♪</span><span>♫</span><span>♪</span></div>
-<header class="app-header"><div class="app-brand"><h1>Miku The Helper <small>ヘルパー</small></h1><span>TDTU → Calendar</span></div><span class="version">v1.7.1</span><button type="button" class="icon-button" id="settingsBtn" data-i18n-aria-label="Mở cài đặt" aria-label="Open settings" data-i18n-title="Cài đặt" title="Settings"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m9 3-1 3-3 1-2 3 2 2-1 3 2 3 3-1 2 3h3l1-3 3-1 2-3-2-2 1-3-2-3-3 1-2-3Z"/><circle cx="12" cy="12" r="3"/></svg></button></header>
+<header class="app-header"><div class="app-brand"><h1>Miku The Helper <small>ヘルパー</small></h1><span data-i18n="Trợ lý lịch học TDTU">Your TDTU study companion</span></div><span class="version">v1.8.0</span><button type="button" class="icon-button" id="settingsBtn" data-i18n-aria-label="Mở cài đặt" aria-label="Open settings" data-i18n-title="Cài đặt" title="Settings"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m9 3-1 3-3 1-2 3 2 2-1 3 2 3 3-1 2 3h3l1-3 3-1 2-3-2-2 1-3-2-3-3 1-2-3Z"/><circle cx="12" cy="12" r="3"/></svg></button></header>
 <main class="content">
-<div class="timetable-panel"><section class="workflow" aria-labelledby="workflowTitle"><span class="visually-hidden" id="workflowStep"></span><h2 id="workflowTitle"></h2><p id="workflowHint"></p></section><div class="week-strip" id="weekStrip" aria-hidden="true" hidden></div>
-<details class="schedule-container" id="scheduleContainer"><summary id="scheduleLabel" class="section-label"><span data-i18n="Lịch học">Schedule</span><span id="countBadge" class="count-badge">0</span></summary><div id="overlapWarn" class="overlap-warning" style="display:none" role="status"></div><div id="classList" tabindex="0" role="region" aria-label="Class list" data-i18n-aria-label="Danh sách lớp"></div><div id="colorHint" style="display:none"></div></details>
+<div class="timetable-panel"><section class="workflow" aria-labelledby="workflowTitle"><span class="visually-hidden" id="workflowStep"></span><h2 id="workflowTitle"></h2><p id="workflowHint"></p></section><div class="week-strip" id="weekStrip" role="group" aria-label="Choose a day" data-i18n-aria-label="Chọn ngày" hidden></div>
+<div id="dayViewTools" class="day-view-tools" hidden><span data-i18n="Chọn ngày để xem ca học">Select a day to view classes</span><button type="button" id="allDaysBtn" aria-pressed="true" aria-controls="classList" data-i18n="Cả tuần">All week</button></div><p id="dayViewHint" class="day-view-hint" hidden data-i18n="Xuất file và đồng bộ vẫn gồm cả tuần.">Exports and sync still include the whole week.</p><details class="schedule-container" id="scheduleContainer"><summary id="scheduleLabel" class="section-label"><span data-i18n="Lịch học">Schedule</span><span id="countBadge" class="count-badge">0</span></summary><div id="overlapWarn" class="overlap-warning" style="display:none" role="status"></div><div id="classList" tabindex="0" role="region" aria-label="Class list" data-i18n-aria-label="Danh sách lớp"></div><div id="colorHint" style="display:none"></div></details>
 </div>
 
 <div id="notOnPortal" style="display:none"><button type="button" id="openPortalBtn" class="btn btn-primary" data-i18n="🔗 Mở Student Portal">Open Student Portal →</button></div>
@@ -14,7 +14,7 @@
 <div id="syncStatus" class="sync-status" style="display:none" role="status" aria-live="polite"></div>
 <p class="destination-description" id="syncCaption"></p>
 <div class="export-divider"><span data-i18n="Hoặc tải file">Or download</span></div>
-<div class="download-grid"><button type="button" id="exportICS" class="btn btn-secondary file-tile"><span class="file-type">.ics</span><span data-i18n="Ứng dụng lịch">Calendar file</span><span aria-hidden="true">↓</span></button><button type="button" id="exportExcel" class="btn btn-secondary file-tile"><span class="file-type">.csv</span><span data-i18n="Bảng tính">Spreadsheet</span><span aria-hidden="true">↓</span></button></div>
+<button type="button" id="downloadBtn" class="btn btn-secondary" aria-haspopup="dialog" aria-controls="exportDialog"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/></svg><span data-i18n="Tải lịch về máy…">Download schedule…</span></button>
 </div></div>
 <div class="talk"><div class="mascot-head"><svg xmlns="http://www.w3.org/2000/svg" class="mascot-avatar" viewBox="0 0 64 64" role="img" aria-label="Hatsune Miku">
         <!-- hai bím tóc -->
@@ -49,5 +49,14 @@
         <path d="M29 50 Q30.5 52.2 32 50 Q33.5 52.2 35 50" stroke="#9f1239" fill="none" stroke-width="1.4" stroke-linecap="round"/>
         <!-- giọt mồ hôi: chỉ hiện khi có lỗi -->
         <path class="sweat" d="M56 22 Q60.5 29 56 32 Q51.5 29 56 22Z" fill="#7fe9e0" stroke="#fff" stroke-width=".8"/>
-      </svg></div><div id="statusBanner" class="status-banner idle" role="status" aria-live="polite"><span class="dot" id="statusDot"></span><span id="statusText"></span></div></div></main><footer class="quiet-footer"><span>Miku / v1.7.1</span><a href="https://github.com/RyuuseiAkira/TDTU-Schedule-Exporter" target="_blank" rel="noopener noreferrer">GitHub</a></footer>
+      </svg></div><div id="statusBanner" class="status-banner idle" role="status" aria-live="polite"><span class="dot" id="statusDot"></span><span id="statusText"></span></div></div></main><footer class="quiet-footer"><span>Miku / v1.8.0</span><a href="https://github.com/RyuuseiAkira/TDTU-Schedule-Exporter" target="_blank" rel="noopener noreferrer">GitHub</a></footer>
+<dialog id="exportDialog" class="format-dialog" aria-labelledby="exportDialogTitle" aria-describedby="exportDialogHint">
+<h2 id="exportDialogTitle" data-i18n="Chọn định dạng tải về">Choose a download format</h2>
+<p id="exportDialogHint" data-i18n="File gồm các lớp hợp lệ của cả tuần, không chỉ ngày đang xem.">Includes all eligible classes for the week, not just the day you are viewing.</p>
+<div class="format-options">
+<button type="button" id="exportICS" class="format-option"><span class="format-badge">ICS</span><span><strong data-i18n="Ứng dụng lịch">Calendar file</strong><small>Google Calendar, Apple, Outlook</small></span><span aria-hidden="true">↓</span></button>
+<button type="button" id="exportExcel" class="format-option"><span class="format-badge csv">CSV</span><span><strong data-i18n="Bảng tính">Spreadsheet</strong><small>Excel, Google Sheets</small></span><span aria-hidden="true">↓</span></button>
+</div>
+<form method="dialog"><button class="format-cancel" data-i18n="Huỷ">Cancel</button></form>
+</dialog>
 <script src="config.js"></script><script src="shared.js"></script><script src="i18n.js"></script><script src="popup.js"></script></body></html>

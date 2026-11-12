@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'docs/images');
 const fixtures = [
   {name:'Phương pháp lập trình',code:'501042',room:'F307',group:'Nhóm 5',dayOfWeek:1,periodStart:1,periodEnd:3,exactDate:new Date(2026,10,9).getTime()},
+  {name:'Tổ chức máy tính',code:'502044',room:'B204',group:'Nhóm 2',dayOfWeek:1,periodStart:7,periodEnd:9,exactDate:new Date(2026,10,9).getTime()},
   {name:'Tổ chức máy tính',code:'502044',room:'B204',group:'Nhóm 2',dayOfWeek:2,periodStart:4,periodEnd:6,exactDate:new Date(2026,10,10).getTime()},
   {name:'Pháp luật đại cương',code:'302053',room:'C305',group:'Nhóm 1',dayOfWeek:4,periodStart:7,periodEnd:9,exactDate:new Date(2026,10,12).getTime()}
 ];

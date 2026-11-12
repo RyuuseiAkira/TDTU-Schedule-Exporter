@@ -49,13 +49,15 @@ This unsigned installation lasts until Firefox restarts. A permanent installatio
 1. Sign in to [Student Portal](https://stdportal.tdtu.edu.vn) and open **Timetable / Thời khoá biểu**.
 2. Select the week you want on the TDTU page.
 3. Open the extension and choose **Get schedule**.
-4. Expand **Schedule** to review the classes, then choose an option below.
+4. Expand **Schedule** to review the classes. Choose **Download schedule…** and select a file format, or sync directly to Google Calendar.
 
 | Option | What you get | Google setup needed? |
 |---|---|---|
 | **Calendar file (.ics)** | A file you can import into Google Calendar, Apple Calendar, or Outlook | No |
 | **Spreadsheet (.csv)** | A UTF-8 CSV file for Excel or Google Sheets | No |
 | **Sync to Google Calendar** | Calendar events with your chosen subject colors | Yes, once; follow the guide below |
+
+Click a day in the week strip to review only its classes, or choose **All week** to see every class. This view filter does not change exports or sync: both still include the full week after your subject and absence filters.
 
 Only the week displayed on the TDTU page is read. To get another week, change it on the page and choose **Refresh**. Google Calendar ignores subject colors when importing ICS files; use direct sync if you want colors.
 

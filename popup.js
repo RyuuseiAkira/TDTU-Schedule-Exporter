@@ -3,6 +3,8 @@
 
 let scheduleData = [];
 let lastOverlapCount = 0;
+let isReadingSchedule = false;
+let selectedDayKey = null; // null means the whole week; this never filters exports.
 // Dữ liệu sau khi loại các môn trong blacklist (dùng cho hiển thị + xuất + đồng bộ)
 function visibleData() { return scheduleData.filter(function(c) { return !isExcluded(c); }); }
 
@@ -35,6 +37,8 @@ const fetchBtn          = document.getElementById('fetchBtn');
 const exportBtns        = document.getElementById('exportBtns');
 const exportICS         = document.getElementById('exportICS');
 const exportExcel       = document.getElementById('exportExcel');
+const downloadBtn = document.getElementById('downloadBtn');
+const exportDialog = document.getElementById('exportDialog');
 const scheduleContainer = document.getElementById('scheduleContainer');
 const classList         = document.getElementById('classList');
 const countBadge        = document.getElementById('countBadge');
@@ -103,6 +107,14 @@ fetchBtn.addEventListener('click', async () => {
 
     // Dữ liệu đến từ trang web → không tin cậy: kiểm tra kiểu / độ dài / khoảng giá trị
     const rawData = result[0] && result[0].result;
+    if (rawData && rawData.view === 'general') {
+      clearScheduleView();
+      document.getElementById('workflowTitle').textContent = tr('Chuyển sang lịch theo tuần');
+      document.getElementById('workflowHint').textContent = 'Xem thời khóa biểu theo tuần | See the weekly schedule';
+      setStatus('idle', tr('Chọn lịch theo tuần trên trang TDTU rồi thử lại.'));
+      fetchBtn.textContent = tr('🔄 Thử lại');
+      return;
+    }
     const data = Array.isArray(rawData) ? rawData.slice(0, 200).map(sanitizeClass).filter(Boolean) : [];
 
     if (!data || data.length === 0) {
@@ -113,10 +125,11 @@ fetchBtn.addEventListener('click', async () => {
       return;
     }
 
+    selectedDayKey = null;
     scheduleData = data;
     renderSchedule(data);
     setStatus(lastOverlapCount ? 'error' : 'success',
-      tr('Đã tải ') + visibleData().length + tr(' lớp') + (lastOverlapCount ? tr(' — ⛔ có ') + lastOverlapCount + tr(' cặp trùng lịch') : tr(' thành công ✓')));
+      lastOverlapCount ? tr('Có lớp trùng giờ. Xem nhãn trong danh sách.') : tr('Đã tải ') + visibleData().length + tr(' lớp') + tr(' thành công ✓'));
     fetchBtn.textContent = tr('Làm mới');
     document.body.classList.add('schedule-ready');
     scheduleContainer.open = lastOverlapCount > 0 || !visibleData().length;
@@ -159,8 +172,9 @@ function fmtShortDate(d) {
 function renderSchedule(all) {
   classList.innerHTML = '';
   const data = all.filter(function(c) { return !isExcluded(c); });
-  const hidden = all.length - data.length;
-  countBadge.textContent = data.length;
+  const shown = data.filter(isSelectedDay);
+  const hidden = all.filter(isSelectedDay).length - shown.length;
+  countBadge.textContent = shown.length;
 
   // Hiển thị khoảng ngày của tuần đang xem ở tiêu đề
   const labelEl = document.getElementById('scheduleLabel');
@@ -168,12 +182,15 @@ function renderSchedule(all) {
     const r = weekRange(all);
     const mon = new Date(r.from + 'T00:00:00');
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-    labelEl.textContent = tr('Lịch học') + ' ';
+    const selectedDate = selectedDayKey ? new Date(selectedDayKey + 'T00:00:00') : null;
+    labelEl.textContent = tr('Lịch học') + (selectedDate ? ' · ' + selectedDate.toLocaleDateString(SETTINGS.language === 'vi' ? 'vi-VN' : 'en-GB', {weekday:'short',day:'2-digit',month:'2-digit'}) : '') + ' ';
     labelEl.appendChild(countBadge);
   }
 
-  exportICS.disabled = !data.length;
-  exportExcel.disabled = !data.length;
+  exportICS.disabled = isReadingSchedule || !data.length;
+  exportExcel.disabled = isReadingSchedule || !data.length;
+  downloadBtn.disabled = isReadingSchedule || !data.length;
+  if (!data.length && exportDialog.open) exportDialog.close();
 
   let hb = document.getElementById('hiddenNote');
   if (!hb) {
@@ -181,30 +198,35 @@ function renderSchedule(all) {
     hb.style.cssText = 'font-size:11px;color:var(--text-dim);margin-bottom:8px';
     classList.parentElement.insertBefore(hb, classList);
   }
-  hb.textContent = hidden ? tr('🚫 Đã ẩn ') + hidden + tr(' lớp (blacklist / GV báo vắng — chỉnh trong ⚙️ Settings)') : '';
+  hb.textContent = hidden ? (SETTINGS.language === 'vi' ? 'Đã ẩn ' + hidden + ' lớp theo bộ lọc.' : hidden + ' classes hidden by filters.') : '';
   const days = [tr('CN'),tr('Thứ 2'),tr('Thứ 3'),tr('Thứ 4'),tr('Thứ 5'),tr('Thứ 6'),tr('Thứ 7')];
 
   // Cảnh báo trùng lịch (chỉ tính các lớp đang hiển thị; chỉ cảnh báo, vẫn xuất cả hai)
-  const overlaps = findOverlaps(data);
+  const weekOverlaps = findOverlaps(data);
+  const overlaps = weekOverlaps.filter(o => isSelectedDay(o.a));
   const clashing = new Set();
   overlaps.forEach(function(o) { clashing.add(o.a); clashing.add(o.b); });
   const warn = document.getElementById('overlapWarn');
+  warn.replaceChildren();
   if (overlaps.length) {
     warn.style.display = 'block';
-    warn.textContent = '';
-    warn.appendChild(h('b', { text: tr('⛔ Phát hiện ') + overlaps.length + tr(' cặp lớp trùng lịch') }));
-    warn.appendChild(document.createTextNode(tr(' (vẫn được xuất / đồng bộ cả hai):')));
-    overlaps.forEach(function(o) {
-      var d = o.a.exactDate ? new Date(o.a.exactDate) : null;
-      var when = (days[o.a.dayOfWeek] || '') + (d ? ' ' + fmtShortDate(d) : '');
-      warn.appendChild(h('div', { style: 'margin-top:4px',
-        text: '• ' + when + tr(' · tiết ') + o.from + '–' + o.to + ': ' + o.a.name + ' ↔ ' + o.b.name }));
+    warn.appendChild(h('strong', {text: SETTINGS.language === 'vi' ? overlaps.length + ' cặp trùng giờ' : overlaps.length + (overlaps.length === 1 ? ' time conflict' : ' time conflicts')}));
+    // Group identical date/period ranges, without repeating long subject names.
+    const ranges = new Map();
+    overlaps.forEach(o => {
+      const date = classBaseDate(o.a);
+      const when = (days[o.a.dayOfWeek] || '') + ' ' + fmtShortDate(date);
+      const text = when + ' · ' + tr('Tiết ') + o.from + '–' + o.to;
+      ranges.set(date.toDateString() + '|' + o.from + '|' + o.to, text);
     });
-  } else { warn.style.display = 'none'; warn.textContent = ''; }
-  lastOverlapCount = overlaps.length;
+    const lines = h('div', {class:'conflict-ranges'});
+    ranges.forEach(text => lines.appendChild(h('div', {text})));
+    warn.append(lines, h('span', {class:'conflict-hint',text:tr('Vẫn xuất cả hai lớp. Xem nhãn trùng giờ bên dưới.')}));
+  } else { warn.style.display = 'none'; }
+  lastOverlapCount = weekOverlaps.length;
   renderWeekStrip(all, data);
   const missing = {};
-  data.forEach(function(cls) { if (cls.code && !colorForClass(cls).assigned) missing[cls.code] = cls.name; });
+  shown.forEach(function(cls) { if (cls.code && !colorForClass(cls).assigned) missing[cls.code] = cls.name; });
   const missKeys = Object.keys(missing);
   const hint = document.getElementById('colorHint');
   if (missKeys.length) {
@@ -219,14 +241,14 @@ function renderSchedule(all) {
     hint.appendChild(addBtn);
   } else { hint.style.display = 'none'; }
 
-  if (!data.length && all.length) {
+  if (!shown.length && all.length) {
     classList.appendChild(h('div', {
       style: 'padding:12px;text-align:center;color:var(--text-dim);font-size:12px;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);margin-bottom:8px',
-      text: tr('Tất cả lớp trong tuần này đang được ẩn. Bạn vẫn có thể bấm Đồng bộ Google Calendar để tự động dọn sự kiện cũ của tuần này.')
+      text: selectedDayKey ? tr('Không có ca học trong ngày này.') : tr('Tất cả lớp trong tuần này đang được ẩn. Bạn vẫn có thể bấm Đồng bộ Google Calendar để tự động dọn sự kiện cũ của tuần này.')
     }));
   }
 
-  data.forEach(function(cls) {
+  shown.forEach(function(cls) {
     const pt  = PERIOD_TIMES[cls.periodStart] || {s:'?',e:'?'};
     const pte = PERIOD_TIMES[cls.periodEnd]   || pt;
     const card = document.createElement('div');
@@ -276,6 +298,10 @@ function escHtml(s) {
 // then collect ONLY cells that ORIGINATE at that row (not just occupied).
 // ─────────────────────────────────────────────────────────────────────────────
 function scrapeWeeklyCalendar() {
+  // Both view selectors exist in either mode: the checked radio identifies the active view.
+  var generalView = document.getElementById('ThoiKhoaBieu1_radXemTKBTongHop');
+  if (generalView && generalView.checked) return { view: 'general' };
+
 
   // ── 1. Find the schedule table ─────────────────────────────────────────────
   var schedTable = null;
@@ -501,6 +527,7 @@ function scrapeWeeklyCalendar() {
 // ─── Export ICS ───────────────────────────────────────────────────────────────
 exportICS.addEventListener('click', function() {
   if (!visibleData().length) return;
+  exportDialog.close();
   downloadFile('tdtu-lichhoc.ics', generateICS(visibleData()), 'text/calendar;charset=utf-8');
   setStatus('success', tr('Đã xuất .ics — import vào Google Calendar nhé!'));
 });
@@ -683,6 +710,7 @@ ext.storage.onChanged.addListener(function(ch, area) {
 // ─── Export CSV ───────────────────────────────────────────────────────────────
 exportExcel.addEventListener('click', function() {
   if (!visibleData().length) return;
+  exportDialog.close();
   downloadFile('tdtu-lichhoc.csv', '\uFEFF'+generateCSV(visibleData()), 'text/csv;charset=utf-8');
   setStatus('success', tr('Đã xuất CSV — mở bằng Excel nhé!'));
 });
@@ -752,6 +780,8 @@ function updateWorkflow(stage) {
   document.getElementById('workflowHint').textContent = ready ? tr('Kiểm tra lịch rồi đồng bộ hoặc tải file.') : stage === 'outside' ? tr('Đăng nhập cổng sinh viên, rồi mở mục Thời khoá biểu.') : stage === 'portal' ? tr('Mở lịch tuần trong cổng sinh viên, rồi quay lại đây.') : tr('Chuyển đến tuần bạn cần trên trang TDTU, rồi bấm bên dưới.');
   document.body.dataset.stage = stage;
   document.getElementById('weekStrip').hidden = !ready;
+  document.getElementById('dayViewTools').hidden = !ready;
+  document.getElementById('dayViewHint').hidden = !ready || !selectedDayKey;
   notOnPortal.style.display = stage === 'outside' ? 'block' : 'none';
   fetchBtn.style.display = stage === 'outside' ? 'none' : '';
   if (!ready) {
@@ -777,21 +807,45 @@ function renderWeekStrip(all, visible) {
       const base = classBaseDate(cls);
       return base.getFullYear() === date.getFullYear() && base.getMonth() === date.getMonth() && base.getDate() === date.getDate();
     });
-    const day = h('div', {class: 'week-day' + (matches.length ? ' has-classes' : '')});
-    day.append(h('span', {class:'week-day-name',text:date.toLocaleDateString(SETTINGS.language === 'vi' ? 'vi-VN' : 'en-GB',{weekday:'short'})}),h('span',{class:'week-day-date',text:String(date.getDate()).padStart(2,'0')}),h('span',{class:'week-day-dot'}));
+    const key = dayKey(date);
+    const day = h('button', {type:'button', class: 'week-day' + (matches.length ? ' has-classes' : ''), 'data-date':key, 'aria-pressed':String(selectedDayKey === key), 'aria-controls':'classList'});
+    day.disabled = isReadingSchedule;
+    day.addEventListener('click', () => selectScheduleDay(key));
+    day.addEventListener('keydown', event => {
+      const keys = ['ArrowLeft','ArrowRight','Home','End'];
+      if (!keys.includes(event.key)) return;
+      event.preventDefault();
+      const days = Array.from(strip.querySelectorAll('.week-day'));
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? 6 : (i + (event.key === 'ArrowRight' ? 1 : -1) + 7) % 7;
+      days[next].focus();
+    });
+    day.setAttribute('aria-label', date.toLocaleDateString(SETTINGS.language === 'vi' ? 'vi-VN' : 'en-GB', {weekday:'long',day:'numeric',month:'long'}) + ': ' + classCount(matches.length));
+    day.setAttribute('title', date.toLocaleDateString(SETTINGS.language === 'vi' ? 'vi-VN' : 'en-GB') + ': ' + classCount(matches.length));
+    day.append(h('span', {class:'week-day-name',text:date.toLocaleDateString(SETTINGS.language === 'vi' ? 'vi-VN' : 'en-GB',{weekday:'short'})}),h('span',{class:'week-day-date',text:String(date.getDate()).padStart(2,'0')}));
+    const dots = h('span', {class:'week-day-dots'});
+    matches.forEach(() => dots.appendChild(h('span', {class:'week-day-dot'})));
+    day.appendChild(dots);
     strip.append(day);
   }
+  document.getElementById('allDaysBtn').setAttribute('aria-pressed', String(selectedDayKey === null));
+  document.getElementById('dayViewHint').hidden = selectedDayKey === null;
 }
 
 function setReadingState(reading) {
+  isReadingSchedule = reading;
+  document.querySelectorAll('.week-day, #allDaysBtn').forEach(button => { button.disabled = reading; });
   document.querySelector('.timetable-panel').setAttribute('aria-busy', String(reading));
   fetchBtn.disabled = reading;
   syncGoogleBtn.disabled = reading;
   exportICS.disabled = reading || !visibleData().length;
   exportExcel.disabled = reading || !visibleData().length;
+  downloadBtn.disabled = reading || !visibleData().length;
+  if (reading && exportDialog.open) exportDialog.close();
 }
 function clearScheduleView() {
+  if (exportDialog.open) exportDialog.close();
   scheduleData = [];
+  selectedDayKey = null;
   lastOverlapCount = 0;
   classList.replaceChildren();
   countBadge.textContent = '0';
@@ -801,3 +855,46 @@ function clearScheduleView() {
   document.getElementById('weekStrip').replaceChildren();
   updateWorkflow('schedule');
 }
+
+function dayKey(date) {
+  return localDateTime(date, '00:00').slice(0, 10);
+}
+function isSelectedDay(cls) {
+  return selectedDayKey === null || dayKey(classBaseDate(cls)) === selectedDayKey;
+}
+function selectScheduleDay(key) {
+  if (isReadingSchedule) return;
+  selectedDayKey = key;
+  renderSchedule(scheduleData);
+  scheduleContainer.open = true;
+  classList.scrollTop = 0;
+  const focusTarget = key === null ? document.getElementById('allDaysBtn') : document.querySelector('.week-day[data-date="' + key + '"]');
+  focusTarget?.focus({preventScroll:true});
+  setStatus('idle', tr(key === null ? 'Đang xem cả tuần. Xuất file và đồng bộ luôn gồm cả tuần.' : 'Đang xem một ngày. Xuất file và đồng bộ vẫn gồm cả tuần.'));
+}
+document.getElementById('allDaysBtn').addEventListener('click', () => selectScheduleDay(null));
+
+downloadBtn.addEventListener('click', () => {
+  if (downloadBtn.disabled || !visibleData().length) return;
+  exportDialog.showModal();
+  exportICS.focus();
+});
+exportDialog.addEventListener('close', () => {
+  if (!downloadBtn.disabled && exportBtns.style.display !== 'none') downloadBtn.focus({preventScroll:true});
+});
+exportDialog.addEventListener('click', event => {
+  if (event.target !== exportDialog) return;
+  const rect = exportDialog.getBoundingClientRect();
+  if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) exportDialog.close();
+});
+// Wrap Tab within the chooser, including browsers that otherwise tab into browser chrome.
+exportDialog.addEventListener('keydown', event => {
+  if (event.key !== 'Tab') return;
+  const controls = Array.from(exportDialog.querySelectorAll('button:not(:disabled)'));
+  const first = controls[0], last = controls[controls.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault(); last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault(); first.focus();
+  }
+});
