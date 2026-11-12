@@ -1,5 +1,9 @@
 # TDTU Schedule Exporter
 
+<p align="center">
+  <img src="docs/images/miku-helper-logo.png" alt="Logo Miku Helper dạng sticker với mascot Miku đang ngủ và bảng đồng bộ lịch" width="800">
+</p>
+
 [English](README.md) · **Tiếng Việt**
 
 Extension cho Chrome, Edge và Firefox giúp đọc thời khoá biểu TDTU theo tuần. Bạn có thể tải lịch dưới dạng ICS, tải bảng tính CSV hoặc đồng bộ lên Google Calendar với màu riêng cho từng môn.

@@ -1,5 +1,9 @@
 # TDTU Schedule Exporter
 
+<p align="center">
+  <img src="docs/images/miku-helper-logo.png" alt="Miku Helper sticker logo with a sleeping Miku mascot and calendar sync panel" width="800">
+</p>
+
 **English** · [Tiếng Việt](README.vn.md)
 
 A Chrome, Edge, and Firefox extension that reads your weekly TDTU timetable. Download it as an ICS calendar file or CSV spreadsheet, or sync it to Google Calendar with a different color for each subject.
