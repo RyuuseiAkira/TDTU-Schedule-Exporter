@@ -205,7 +205,7 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     await page.goto('http://ui.test/options.html');
     await page.waitForFunction(() => !!document.querySelector('#redirect').value);
     assert.equal(await page.locator('.settings-nav [aria-current=location]').getAttribute('href'),'#appearance');
-    for (const section of ['calendar','colors','excluded','appearance']) {
+    for (const section of ['calendar','colors','classes','appearance']) {
       await page.locator('.settings-nav a[href="#'+section+'"]').click();
       await page.waitForFunction(id=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#'+id,section);
       assert.equal(await page.locator('.settings-nav [aria-current=location]').count(),1);
@@ -213,6 +213,50 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     await page.locator('#classes').evaluate(el=>window.scrollTo(0,scrollY+el.getBoundingClientRect().top-30));
     await page.waitForFunction(()=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#classes');
     checks+=2;
+    // A hide/restore cycle must preserve color settings and persist across reloads.
+    const subject = page.locator('#subjects .row').first();
+    const originalCode = await subject.locator('input.code').inputValue();
+    const originalCount = await page.locator('#subjects .row').count();
+    await subject.locator('.subject-action').click();
+    await page.waitForFunction(code=>JSON.parse(localStorage.getItem('settings')).blacklist.some(b=>b.match===code && b.type==='code'),originalCode);
+    assert.equal(await page.locator('#subjects .row').count(),originalCount);
+    await page.reload();
+    await page.waitForFunction(()=>document.querySelector('#subjects .row.subject-hidden'));
+    assert(await page.locator('#subjects .row').first().locator('.subject-action svg').count());
+    assert.equal(await page.locator('#subjects .row').count(),originalCount);
+    await page.locator('#subjects .row').first().locator('.subject-action').click();
+    await page.waitForFunction(code=>!JSON.parse(localStorage.getItem('settings')).blacklist.some(b=>b.match===code),originalCode);
+    checks++;
+    await page.locator('#addBlack').click();
+    assert(await page.locator('#filterError').isVisible());
+    await page.locator('#filterType').selectOption('name');
+    await page.locator('#filterMatch').fill('lập trình');
+    await page.locator('#filterMatch').press('Enter');
+    await page.waitForFunction(()=>JSON.parse(localStorage.getItem('settings')).blacklist.some(b=>b.type==='name' && b.match==='lập trình'));
+    assert.equal(await page.locator('#filterMatch').inputValue(),'');
+    await page.locator('#filterMatch').fill('LẬP TRÌNH');
+    await page.locator('#filterMatch').press('Enter');
+    assert(await page.locator('#filterError').isVisible());
+    assert.equal(await page.locator('.hidden-rule').count(),1);
+    await page.locator('#blacklist .subject-action').click();
+    assert(await page.locator('.filter-empty').isVisible());
+    assert(await page.locator('#filterMatch').evaluate(el=>el===document.activeElement));
+    checks++;
+    // Explicit code rules must not match names; name rules must affect actual exports.
+    await page.locator('#filterType').selectOption('code');
+    await page.locator('#filterMatch').fill('lập trình');
+    await page.locator('#filterMatch').press('Enter');
+    await page.waitForTimeout(450);
+    assert.equal(await page.evaluate(async()=>{await loadSettings(); return isBlacklisted({code:'501042',name:'Phương pháp lập trình'});}),false);
+    await page.locator('#blacklist .subject-action').click();
+    await page.locator('#filterType').selectOption('name');
+    await page.locator('#filterMatch').fill('lập trình');
+    await page.locator('#filterMatch').press('Enter');
+    await page.waitForTimeout(450);
+    assert.equal(await page.evaluate(async()=>{await loadSettings(); return isBlacklisted({code:'501042',name:'Phương pháp lập trình'});}),true);
+    await page.locator('#blacklist .subject-action').click();
+    await page.locator('#filterMatch').fill('');
+    checks++;
     const firstColor = page.locator('#subjects .palette button').first();
     await firstColor.focus();
     await page.keyboard.press('Enter');
@@ -239,13 +283,18 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     await page.locator('#copyRedirect').click();
     assert(await page.locator('#saved').evaluate(el => el.classList.contains('error')));
     checks++;
-    for (const width of [320, 390, 1100]) {
-      await page.setViewportSize({ width, height: 850 });
-      await noOverflow();
-      await page.locator('.settings-nav a[href="#appearance"]').evaluate(el=>el.click());
-      await page.waitForFunction(()=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#appearance');
-      await page.screenshot({ path: path.join(artifactDir, `settings-${width}.png`), fullPage: true });
-      checks++;
+    for (const language of ['en','vi']) {
+      await page.locator('#language').selectOption(language);
+      for (const width of [320, 390, 1100]) {
+        await page.setViewportSize({ width, height: 850 });
+        await noOverflow();
+        await page.locator('.settings-nav a[href="#appearance"]').evaluate(el=>el.click());
+        await page.waitForFunction(()=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#appearance');
+        assert.equal(await page.locator('.settings-nav a').count(),4);
+        await page.screenshot({ path: path.join(artifactDir, `settings-${language}-${width}.png`), fullPage: true });
+        await page.locator('#classes').screenshot({path:path.join(artifactDir,`filters-${language}-${width}.png`)});
+        checks++;
+      }
     }
     await page.locator('#animateMascot').check();
     await page.waitForTimeout(400);

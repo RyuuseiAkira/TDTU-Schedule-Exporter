@@ -77,7 +77,8 @@ function sanitizeSettings(raw) {
   }
   if (Array.isArray(raw.blacklist)) {
     out.blacklist = raw.blacklist.slice(0, 100).filter(isPlainObj)
-      .map(b => ({ match: cleanStr(b.match, 100), name: cleanStr(b.name, 100) }))
+      .map(b => ({ match: cleanStr(b.match, 100), name: cleanStr(b.name, 100),
+        ...(b.type === 'code' || b.type === 'name' ? {type: b.type} : {}) }))
       .filter(b => b.match);
   }
   if (typeof raw.animateMascot === 'boolean') out.animateMascot = raw.animateMascot;
@@ -135,14 +136,18 @@ function localDateTime(date, hhmm) {
 }
 
 // Lớp có nằm trong blacklist không? match toàn số = mã môn; còn lại = từ khoá trong tên
-function isBlacklisted(cls) {
-  const code = String(cls.code || '').trim();
+function matchesFilter(cls, rule) {
+  const code = String(cls.code || '').trim().toLowerCase();
   const name = String(cls.name || '').toLowerCase();
-  return (SETTINGS.blacklist || []).some(function(b) {
-    const m = String(b && b.match || '').trim().toLowerCase();
-    if (!m) return false;
-    return m === code.toLowerCase() || (!/^\d+$/.test(m) && name.indexOf(m) >= 0);
-  });
+  const match = String(rule && rule.match || '').trim().toLowerCase();
+  if (!match) return false;
+  if (rule.type === 'code') return match === code;
+  if (rule.type === 'name') return name.includes(match);
+  // Keep existing untyped rules compatible with older settings.
+  return match === code || (!/^\d+$/.test(match) && name.includes(match));
+}
+function isBlacklisted(cls) {
+  return (SETTINGS.blacklist || []).some(rule => matchesFilter(cls, rule));
 }
 
 // Lớp bị loại: nằm trong blacklist, hoặc GV báo vắng (khi bật "bỏ qua GV báo vắng")

@@ -176,9 +176,10 @@ Open the gear button in the popup. Changes save automatically.
 
 - **Appearance:** English/Vietnamese and animation preferences. System reduced-motion preferences are respected.
 - **Subject colors:** assign a Google Calendar color by subject code, or choose a default for unassigned subjects. Google supports 11 event colors.
-- **Class filters:** hide classes marked `GV báo vắng` (lecturer absent). This is enabled by default.
-- **Hidden subjects:** exclude a subject code or a keyword in its name. The placeholder subject `000000` is hidden by default.
+- **Filters:** hide classes marked `GV báo vắng` (enabled by default), or add a rule using **Subject code** for an exact match and **Name contains** for a name keyword. Choose **Hide subject** to apply it and **Restore** to include that subject again. The placeholder subject `000000` is hidden by default.
 - **Google Calendar:** your OAuth Client ID, destination Calendar ID, and installation-specific Redirect URI.
+
+You can also choose **Hide subject** beside a subject color. Hiding keeps its assigned color; restoring brings it back with that color.
 
 Sync updates existing extension events and skips unchanged ones. It removes extension-created events that are no longer in the fetched week, for example after a class becomes hidden, absent, or rescheduled. It does not remove events you created yourself or imported from ICS. Overlapping classes produce a warning; both remain eligible for export and sync.
 

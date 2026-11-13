@@ -21,7 +21,7 @@ A single continuous dark working surface. The user rejected fragmented layouts, 
 - Week strip: actual seven dates of the fetched week, with active-day dots derived only from visible classes. Each date is a native button with an accessible label, pressed state, and session-count dots. Selecting it opens that day’s classes. All week restores the complete view. Left/Right/Home/End navigate dates; Enter/Space selects. View selection never filters exports or sync.
 - Class review: collapsed after fetch, collapsible, with a bounded scroll area. Subject color is a small dot, not a thick colored border. Overlap and filter messages remain visible with the review.
 - Save: one full-width Calendar action, actionable Client ID help below it when disconnected, and one secondary Download schedule button. Its native modal offers ICS and CSV with a clear all-week scope description. Escape, Cancel and backdrop clicks dismiss it; keyboard focus stays within the chooser and returns to Download on close. Never nest destination cards.
-- Settings: quiet desktop navigation rail, single content column separated by rules. The current section has a mint edge, highlighted background and aria-current location state, updated on anchor clicks and scrolling. On narrow screens navigation wraps into rows.
+- Settings: four sections (Appearance, Subject colors, Filters, Google Calendar) in a quiet desktop navigation rail, single content column separated by rules. The current section has a mint edge, highlighted background and aria-current location state, updated on anchor clicks and scrolling. On narrow screens navigation wraps into rows.
 - Mascot: head-only inline SVG; periodic blink and one brief greeting. Gentle pink/aqua falling music notes form the background. Appearance preference and OS reduced motion disable mascot and background animations.
 
 ## Validation
@@ -39,3 +39,7 @@ Run `node tests/design-browser.cjs` with Playwright available (set `CHROMIUM_PAT
 ## Interaction feedback
 
 Secondary buttons depress on press; the class-review chevron rotates and its contents enter over 180ms. Result messages replay a 200ms feedback animation when content/state changes. Sync progress does not bounce or scroll for every event. Save notifications ease into place. Appearance animation opt-out and reduced-motion disable decorative animations, transitions, and smooth scrolling.
+
+## Settings filters
+
+Use local line SVG icons, labelled code/name fields and explicit Hide subject / Restore actions. Hiding never removes a color assignment. Absence filtering and hidden-subject rules share the Filters section. New rules choose exact code or name substring matching; untyped legacy rules preserve their previous matching behavior. Rule input rejects blank and duplicate entries. A subject hidden by a keyword links to Review filter rather than offering a misleading restore. Filters apply to popup, both export formats and Calendar sync.

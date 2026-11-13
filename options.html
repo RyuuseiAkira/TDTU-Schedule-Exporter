@@ -43,40 +43,39 @@
         <!-- giọt mồ hôi: chỉ hiện khi có lỗi -->
         <path class="sweat" d="M56 22 Q60.5 29 56 32 Q51.5 29 56 22Z" fill="#7fe9e0" stroke="#fff" stroke-width=".8"/>
       </svg>
-</div><div><div class="eyebrow">Miku / Schedule</div><h1><span data-i18n="Bảng điều khiển">Control panel</span></h1><p class="sub"><span data-i18n="Màu sắc, lịch học và mọi thứ theo cách của bạn.">Your schedule, colors, and connections. All in one place.</span></p></div><span class="autosave"><span data-i18n="● Tự động lưu">● Auto-save enabled</span></span></header><nav class="settings-nav" aria-label="Các mục cài đặt" data-i18n-aria-label="Các mục cài đặt"><a href="#appearance"><span data-i18n="Giao diện">Appearance</span></a><a href="#colors"><span data-i18n="Màu môn học">Subject colors</span></a><a href="#classes"><span data-i18n="Lớp học">Classes</span></a><a href="#excluded"><span data-i18n="Môn ẩn">Hidden subjects</span></a><a href="#calendar">Calendar</a></nav>
+</div><div><div class="eyebrow">Miku / Schedule</div><h1><span data-i18n="Cài đặt">Settings</span></h1><p class="sub"><span data-i18n="Điều chỉnh giao diện, chọn lớp cần giữ và kết nối lịch.">Make it yours. Choose your classes and connect your calendar.</span></p></div><span class="autosave"><span class="save-dot" aria-hidden="true"></span><span data-i18n="Tự động lưu thay đổi">Changes saved automatically</span></span></header><nav class="settings-nav" aria-label="Settings sections" data-i18n-aria-label="Các mục cài đặt"><a href="#appearance"><span data-icon="sliders" aria-hidden="true"></span><span data-i18n="Giao diện">Appearance</span></a><a href="#colors"><span data-icon="palette" aria-hidden="true"></span><span data-i18n="Màu theo môn học">Subject colors</span></a><a href="#classes"><span data-icon="filter" aria-hidden="true"></span><span data-i18n="Bộ lọc">Filters</span></a><a href="#calendar"><span data-icon="calendar" aria-hidden="true"></span><span data-i18n="Lịch Google">Google Calendar</span></a></nav>
 
-  <section id="appearance"><h2><span data-i18n="Giao diện">Appearance</span></h2><p class="hint"><span data-i18n="Chọn ngôn ngữ cho popup và trang cài đặt.">Choose the language for the popup and settings.</span></p><label for="language"><span data-i18n="Ngôn ngữ giao diện">Interface language</span></label><select id="language"><option value="en">English</option><option value="vi">Tiếng Việt</option></select><label class="motion-option"><input type="checkbox" id="animateMascot"><span data-i18n="Hiệu ứng chuyển động">Animations</span></label><p class="hint" data-i18n="Tự động tắt khi hệ thống bật giảm chuyển động.">Automatically disabled when your system requests reduced motion.</p></section>
+  <section id="appearance"><h2><span data-icon="sliders" aria-hidden="true"></span><span data-i18n="Giao diện">Appearance</span></h2><p class="hint"><span data-i18n="Chọn ngôn ngữ cho popup và trang cài đặt.">Choose the language for the popup and settings.</span></p><label for="language"><span data-i18n="Ngôn ngữ giao diện">Interface language</span></label><select id="language"><option value="en">English</option><option value="vi">Tiếng Việt</option></select><label class="motion-option"><input type="checkbox" id="animateMascot"><span data-i18n="Hiệu ứng chuyển động">Animations</span></label><p class="hint" data-i18n="Tự động tắt khi hệ thống bật giảm chuyển động.">Automatically disabled when your system requests reduced motion.</p></section>
   <section id="colors">
-    <h2><span data-i18n="Màu theo môn học">Subject colors</span></h2>
-    <p class="hint"><span data-i18n="Mã môn là số sau &quot;Ma:&quot; trong mô tả sự kiện. Chọn màu bằng cách bấm vào chấm tròn.">Find the subject code after “Mã:” in the event description. Select a circle to assign a color.</span></p>
+    <h2><span data-icon="palette" aria-hidden="true"></span><span data-i18n="Màu theo môn học">Subject colors</span></h2>
+    <p class="hint"><span data-i18n="Chọn màu cho từng môn khi đồng bộ Google Calendar. Mã môn có trên thời khoá biểu TDTU.">Choose a color for each subject in Google Calendar. Find subject codes on your TDTU timetable.</span></p>
     <div id="subjects"></div><p id="duplicateCodes" class="field-error" role="status" hidden></p>
     <div class="actions">
-      <button class="btn" id="addRow"><span data-i18n="＋ Thêm môn">+ Add subject</span></button>
+      <button class="btn" id="addRow"><span data-icon="plus" aria-hidden="true"></span><span data-i18n="Thêm môn">Add subject</span></button>
     </div>
-    <label><span data-i18n="Màu mặc định cho môn chưa khai báo">Default color for unassigned subjects</span></label>
-    <div class="palette" id="defaultPalette"></div>
+<div class="default-color"><h3><span data-i18n="Màu mặc định">Default color</span></h3><p class="hint"><span data-i18n="Dùng cho các môn chưa có màu riêng.">Used for subjects without an assigned color.</span></p><div class="palette" id="defaultPalette"></div></div>
   </section>
 
   <section id="classes">
-    <h2><span data-i18n="Lọc lớp học">Class filters</span></h2>
-    <label style="display:flex;align-items:center;gap:10px;margin:0;color:var(--text);font-size:14px;cursor:pointer">
-      <input type="checkbox" id="ignoreAbsent" style="width:18px;height:18px;accent-color:var(--accent)">
-      <span data-i18n="Bỏ qua các lớp có “GV báo vắng”">Hide classes marked “GV báo vắng” (lecturer absent)</span>
-    </label>
-    <p class="hint" style="margin:6px 0 0 28px"><span data-i18n="Bật: lớp giáo viên báo vắng bị ẩn khỏi popup, không xuất / đồng bộ, và lần đồng bộ Google Calendar kế tiếp sẽ xoá sự kiện cũ của lớp đó. Tắt: vẫn xuất, ghi chú “GV báo vắng” nằm trong mô tả.">When enabled, classes with an absent lecturer are hidden and excluded from exports. The next Calendar sync removes their old events. Otherwise, they remain with an absence note.</span></p>
-  </section>
-
-  <section id="excluded">
-    <h2><span data-i18n="Môn học được ẩn">Hidden subjects</span></h2>
-    <p class="hint" data-i18n="Môn trong danh sách này được ẩn và không xuất hoặc đồng bộ. Nhập mã môn (ví dụ 000000) hoặc từ khoá trong tên môn (ví dụ tiếng anh).">Hidden subjects are excluded from exports and sync. Enter a subject code (e.g. 000000) or a keyword from its name (e.g. tiếng anh).</p>
-    <div id="blacklist"></div>
-    <div class="actions">
-      <button class="btn" id="addBlack"><span data-i18n="＋ Thêm vào blacklist">+ Add hidden subject</span></button>
+    <div class="section-heading"><h2><span data-icon="filter" aria-hidden="true"></span><span data-i18n="Bộ lọc lịch học">Schedule filters</span></h2><span id="filterCount" class="settings-count"></span></div>
+    <p class="hint"><span data-i18n="Chọn lớp xuất hiện trong popup, file tải về và Google Calendar.">Choose which classes appear in the popup, downloads, and Google Calendar.</span></p>
+    <label class="filter-toggle" for="ignoreAbsent"><span><strong><span data-i18n="Ẩn lớp giảng viên báo vắng">Hide cancelled classes</span></strong><small><span data-i18n="Bỏ qua các ca được đánh dấu “GV báo vắng”.">Skip sessions marked “GV báo vắng” (lecturer absent).</span></small></span><input type="checkbox" id="ignoreAbsent" role="switch"></label>
+    <div id="excluded" class="filter-rules">
+      <h3><span data-i18n="Môn muốn ẩn">Subjects to hide</span></h3>
+      <p class="hint"><span data-i18n="Ẩn theo mã môn chính xác hoặc từ khoá trong tên môn.">Match an exact subject code or a word in the subject name.</span></p>
+      <form id="filterForm" class="filter-composer">
+        <div class="filter-field"><label for="filterType"><span data-i18n="Ẩn theo">Match by</span></label><select id="filterType"><option value="code" data-i18n="Mã môn">Subject code</option><option value="name" data-i18n="Tên chứa">Name contains</option></select></div>
+        <div class="filter-field filter-value"><label for="filterMatch" id="filterMatchLabel"><span data-i18n="Mã môn">Subject code</span></label><input type="text" id="filterMatch" maxlength="100" placeholder="e.g. 501042" spellcheck="false" aria-describedby="filterError"></div>
+        <button class="btn" id="addBlack" type="submit"><span data-icon="plus" aria-hidden="true"></span><span data-i18n="Ẩn môn">Hide subject</span></button>
+        <p id="filterError" class="field-error" role="status" hidden></p>
+      </form>
+      <div id="blacklist" aria-label="Hidden subjects" data-i18n-aria-label="Môn học được ẩn"></div>
     </div>
+    <p class="filter-scope"><span data-icon="info" aria-hidden="true"></span><span data-i18n="Lần đồng bộ tiếp theo sẽ xoá sự kiện cũ của các lớp bị ẩn. Khôi phục để đưa chúng trở lại.">Your next sync removes old events for hidden classes. Restore a subject to include it again.</span></p>
   </section>
 
   <section id="calendar">
-    <h2><span data-i18n="Kết nối Google Calendar">Connect Google Calendar</span></h2>
+    <h2><span data-icon="calendar" aria-hidden="true"></span><span data-i18n="Kết nối Google Calendar">Connect Google Calendar</span></h2>
     <p class="hint"><span data-i18n="Cần để đồng bộ có màu (Google bỏ qua màu khi import file .ics).">Connect to sync subject colors. Google ignores colors when importing ICS files.</span></p>
     <label for="clientId">Google OAuth Client ID</label>
     <div class="secret-field"><input type="password" class="full" id="clientId" placeholder="Nhập Google OAuth Client ID" data-i18n-placeholder="Nhập Google OAuth Client ID" spellcheck="false" autocomplete="off" aria-describedby="clientIdHint"><button type="button" id="toggleClientId" class="reveal" aria-label="Hiện Client ID" data-i18n-aria-label="Hiện Client ID" aria-pressed="false" title="Hiện Client ID" data-i18n-title="Hiện Client ID"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m4 4 16 16"/></svg></button></div>
@@ -99,8 +98,8 @@
   </section>
 
   <section id="reset-section">
-    <h2><span data-i18n="Bắt đầu lại">Reset settings</span></h2>
-    <button class="btn" id="reset"><span data-i18n="Khôi phục mặc định">Restore defaults</span></button>
+    <h2><span data-icon="reset" aria-hidden="true"></span><span data-i18n="Bắt đầu lại">Reset settings</span></h2>
+    <button class="btn" id="reset"><span data-icon="reset" aria-hidden="true"></span><span data-i18n="Khôi phục mặc định">Restore defaults</span></button>
   </section>
 </div>
 <footer class="settings-ambience"><span>Miku Helper</span><a href="https://github.com/RyuuseiAkira/TDTU-Schedule-Exporter" target="_blank" rel="noopener noreferrer">GitHub →</a></footer>
