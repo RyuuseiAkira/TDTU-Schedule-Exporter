@@ -176,9 +176,10 @@ Bấm bánh răng trong popup để mở Cài đặt. Các thay đổi được 
 
 - **Giao diện:** chọn English/Tiếng Việt và bật/tắt hiệu ứng chuyển động. Extension tôn trọng chế độ giảm chuyển động của hệ thống.
 - **Màu theo môn học:** gán màu Google Calendar theo mã môn, hoặc chọn màu mặc định cho môn chưa khai báo. Google hỗ trợ 11 màu sự kiện.
-- **Lọc lớp học:** ẩn lớp có ghi chú `GV báo vắng`. Mặc định bật.
-- **Môn học được ẩn:** loại một mã môn hoặc từ khoá trong tên môn. Môn dự kiến `000000` được ẩn mặc định.
+- **Bộ lọc:** ẩn lớp có ghi chú `GV báo vắng` (mặc định bật), hoặc chọn **Mã môn** để khớp chính xác và **Tên chứa** để lọc theo từ khoá. Bấm **Ẩn môn** để áp dụng; **Khôi phục** để đưa môn trở lại. Môn dự kiến `000000` được ẩn mặc định.
 - **Google Calendar:** OAuth Client ID, Calendar ID đích và Redirect URI của bản cài đặt hiện tại.
+
+Bạn cũng có thể bấm **Ẩn môn** ngay cạnh màu môn học. Màu đã chọn vẫn được giữ khi ẩn và khôi phục môn.
 
 Đồng bộ sẽ cập nhật sự kiện cũ do extension tạo và bỏ qua sự kiện không thay đổi. Extension xoá các sự kiện do chính nó tạo mà không còn trong tuần đang đọc, chẳng hạn lớp vừa được ẩn, báo vắng hoặc đổi lịch. Sự kiện bạn tự tạo hay nhập từ ICS không bị xoá. Các lớp trùng giờ được cảnh báo nhưng vẫn có thể xuất và đồng bộ cả hai.
 

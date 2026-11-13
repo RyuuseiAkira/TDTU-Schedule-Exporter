@@ -54,6 +54,7 @@ const fixtures = [
       if(await page.locator('#clientId').getAttribute('type')!=='password')throw Error('Client ID must be masked');
       await freeze();
       await page.screenshot({path:path.join(output,`settings-${language}.png`),fullPage:true});
+      await page.locator('#classes').screenshot({path:path.join(output,`filters-${language}.png`)});
       await page.locator('#calendar').scrollIntoViewIfNeeded();
       await freeze();
       await page.locator('#calendar').screenshot({path:path.join(output,`calendar-setup-${language}.png`)});

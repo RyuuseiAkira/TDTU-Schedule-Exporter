@@ -40,3 +40,14 @@ test('ICS uses the same period times as Google exports, with valid UTF-8 line fo
   assert(output.endsWith('\r\n'));
   for (const line of output.split('\r\n')) assert(Buffer.byteLength(line)<=75);
 });
+test('typed filters distinguish exact codes from name keywords and preserve legacy rules', () => {
+  const ctx = setup();
+  vm.runInContext(`const cls={code:'TTSH01',name:'Sinh hoạt TTSH01 - Nhóm 5'};`,ctx);
+  assert.equal(vm.runInContext(`matchesFilter(cls,{type:'code',match:'ttsh01'})`,ctx),true);
+  assert.equal(vm.runInContext(`matchesFilter(cls,{type:'code',match:'sinh hoạt'})`,ctx),false);
+  assert.equal(vm.runInContext(`matchesFilter(cls,{type:'name',match:'NHÓM 5'})`,ctx),true);
+  assert.equal(vm.runInContext(`matchesFilter(cls,{match:'sinh hoạt'})`,ctx),true);
+  assert.equal(vm.runInContext(`matchesFilter(cls,{match:'01'})`,ctx),false);
+  const types=vm.runInContext(`sanitizeSettings({blacklist:[{match:'TTSH01',type:'code'},{match:'Nhóm 5',type:'name'},{match:'legacy'},{match:'bad',type:'invalid'}]}).blacklist.map(b=>b.type).join(',')`,ctx);
+  assert.equal(types,'code,name,,');
+});

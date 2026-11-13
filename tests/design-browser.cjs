@@ -205,7 +205,7 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     await page.goto('http://ui.test/options.html');
     await page.waitForFunction(() => !!document.querySelector('#redirect').value);
     assert.equal(await page.locator('.settings-nav [aria-current=location]').getAttribute('href'),'#appearance');
-    for (const section of ['calendar','colors','excluded','appearance']) {
+    for (const section of ['calendar','colors','classes','appearance']) {
       await page.locator('.settings-nav a[href="#'+section+'"]').click();
       await page.waitForFunction(id=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#'+id,section);
       assert.equal(await page.locator('.settings-nav [aria-current=location]').count(),1);
@@ -213,6 +213,105 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     await page.locator('#classes').evaluate(el=>window.scrollTo(0,scrollY+el.getBoundingClientRect().top-30));
     await page.waitForFunction(()=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#classes');
     checks+=2;
+    await page.locator('#filterType input[value=code]').focus();
+    await page.keyboard.press('ArrowRight');
+    assert(await page.locator('#filterType input[value=name]').isChecked());
+    assert.equal(await page.locator('#filterForm').getAttribute('data-mode'),'name');
+    await page.keyboard.press('ArrowLeft');
+    assert(await page.locator('#filterType input[value=code]').isChecked());
+    checks++;
+    await page.locator('#filterType input[value=legacy] + span').click();
+    await page.locator('#filterMatch').fill('501042');
+    await page.locator('#filterMatch').press('Enter');
+    await page.waitForTimeout(450);
+    assert.equal(await page.evaluate(async()=>{await loadSettings();return isBlacklisted({code:'501042',name:'Example'});}),true);
+    await page.locator('#blacklist .subject-action').click();
+    checks++;
+    assert(await page.locator('#filterKeyword').isVisible());
+    await page.locator('#filterKeyword').fill('lập trình');
+    await page.locator('#filterKeyword').press('Enter');
+    await page.waitForTimeout(450);
+    assert.equal(await page.evaluate(async()=>{await loadSettings();return isBlacklisted({code:'999999',name:'Phương pháp lập trình'});}),true);
+    await page.locator('#blacklist .subject-action').click();
+    await page.locator('#filterMatch').fill('501042');
+    await page.locator('#filterKeyword').fill('lập trình');
+    await page.locator('#filterKeyword').press('Enter');
+    await page.waitForTimeout(450);
+    assert.equal(await page.locator('#blacklist .hidden-rule').count(),2);
+    assert.equal(await page.evaluate(async()=>{await loadSettings();return isBlacklisted({code:'501042',name:'Other'}) && isBlacklisted({code:'999999',name:'Lập trình'});}),true);
+    assert.equal(await page.locator('#filterKeyword').inputValue(),'');
+    await page.locator('#filterKeyword').fill('lập trình');
+    await page.locator('#filterKeyword').press('Enter');
+    assert.equal(await page.locator('#filterKeyword').getAttribute('aria-invalid'),'true');
+    await page.locator('#blacklist .subject-action').first().click();
+    await page.locator('#blacklist .subject-action').first().click();
+    await page.locator('#filterKeyword').fill('ignored');
+    await page.locator('#filterType input[value=code] + span').click();
+    assert(!(await page.locator('#filterKeyword').isVisible()));
+    assert(await page.locator('#filterKeyword').isDisabled());
+    await page.locator('#filterMatch').fill('SOLO');
+    await page.locator('#filterMatch').press('Enter');
+    assert.equal(await page.locator('#blacklist .hidden-rule').count(),1);
+    await page.locator('#blacklist .subject-action').click();
+    checks+=3;
+    // Editing a subject must refresh its filter action without replacing the focused input.
+    const editableCode = page.locator('#subjects .code').first();
+    const savedCode = await editableCode.inputValue();
+    await page.locator('#filterType input[value=code] + span').click();
+    await page.locator('#filterMatch').fill('UI-TEST');
+    await page.locator('#filterMatch').press('Enter');
+    await editableCode.fill('UI-TEST');
+    assert(await page.locator('#subjects .row').first().evaluate(el=>el.classList.contains('subject-hidden')));
+    assert(await editableCode.evaluate(el=>el===document.activeElement));
+    assert.match(await page.locator('#subjects .subject-action').first().innerText(), /Restore|Khôi phục/);
+    await editableCode.fill(savedCode);
+    assert(!(await page.locator('#subjects .row').first().evaluate(el=>el.classList.contains('subject-hidden'))));
+    await page.locator('#blacklist .subject-action').click();
+    checks++;
+    // A hide/restore cycle must preserve color settings and persist across reloads.
+    const subject = page.locator('#subjects .row').first();
+    const originalCode = await subject.locator('input.code').inputValue();
+    const originalCount = await page.locator('#subjects .row').count();
+    await subject.locator('.subject-action').click();
+    await page.waitForFunction(code=>JSON.parse(localStorage.getItem('settings')).blacklist.some(b=>b.match===code && b.type==='code'),originalCode);
+    assert.equal(await page.locator('#subjects .row').count(),originalCount);
+    await page.reload();
+    await page.waitForFunction(()=>document.querySelector('#subjects .row.subject-hidden'));
+    assert(await page.locator('#subjects .row').first().locator('.subject-action svg').count());
+    assert.equal(await page.locator('#subjects .row').count(),originalCount);
+    await page.locator('#subjects .row').first().locator('.subject-action').click();
+    await page.waitForFunction(code=>!JSON.parse(localStorage.getItem('settings')).blacklist.some(b=>b.match===code),originalCode);
+    checks++;
+    await page.locator('#addBlack').click();
+    assert(await page.locator('#filterError').isVisible());
+    await page.locator('#filterType input[value=name] + span').click();
+    await page.locator('#filterMatch').fill('lập trình');
+    await page.locator('#filterMatch').press('Enter');
+    await page.waitForFunction(()=>JSON.parse(localStorage.getItem('settings')).blacklist.some(b=>b.type==='name' && b.match==='lập trình'));
+    assert.equal(await page.locator('#filterMatch').inputValue(),'');
+    await page.locator('#filterMatch').fill('LẬP TRÌNH');
+    await page.locator('#filterMatch').press('Enter');
+    assert(await page.locator('#filterError').isVisible());
+    assert.equal(await page.locator('.hidden-rule').count(),1);
+    await page.locator('#blacklist .subject-action').click();
+    assert(await page.locator('.filter-empty').isVisible());
+    assert(await page.locator('#filterMatch').evaluate(el=>el===document.activeElement));
+    checks++;
+    // Explicit code rules must not match names; name rules must affect actual exports.
+    await page.locator('#filterType input[value=code] + span').click();
+    await page.locator('#filterMatch').fill('lập trình');
+    await page.locator('#filterMatch').press('Enter');
+    await page.waitForTimeout(450);
+    assert.equal(await page.evaluate(async()=>{await loadSettings(); return isBlacklisted({code:'501042',name:'Phương pháp lập trình'});}),false);
+    await page.locator('#blacklist .subject-action').click();
+    await page.locator('#filterType input[value=name] + span').click();
+    await page.locator('#filterMatch').fill('lập trình');
+    await page.locator('#filterMatch').press('Enter');
+    await page.waitForTimeout(450);
+    assert.equal(await page.evaluate(async()=>{await loadSettings(); return isBlacklisted({code:'501042',name:'Phương pháp lập trình'});}),true);
+    await page.locator('#blacklist .subject-action').click();
+    await page.locator('#filterMatch').fill('');
+    checks++;
     const firstColor = page.locator('#subjects .palette button').first();
     await firstColor.focus();
     await page.keyboard.press('Enter');
@@ -239,13 +338,18 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     await page.locator('#copyRedirect').click();
     assert(await page.locator('#saved').evaluate(el => el.classList.contains('error')));
     checks++;
-    for (const width of [320, 390, 1100]) {
-      await page.setViewportSize({ width, height: 850 });
-      await noOverflow();
-      await page.locator('.settings-nav a[href="#appearance"]').evaluate(el=>el.click());
-      await page.waitForFunction(()=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#appearance');
-      await page.screenshot({ path: path.join(artifactDir, `settings-${width}.png`), fullPage: true });
-      checks++;
+    for (const language of ['en','vi']) {
+      await page.locator('#language').selectOption(language);
+      for (const width of [320, 390, 651, 800, 1100]) {
+        await page.setViewportSize({ width, height: 850 });
+        await noOverflow();
+        await page.locator('.settings-nav a[href="#appearance"]').evaluate(el=>el.click());
+        await page.waitForFunction(()=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#appearance');
+        assert.equal(await page.locator('.settings-nav a').count(),4);
+        await page.screenshot({ path: path.join(artifactDir, `settings-${language}-${width}.png`), fullPage: true });
+        await page.locator('#classes').screenshot({path:path.join(artifactDir,`filters-${language}-${width}.png`)});
+        checks++;
+      }
     }
     await page.locator('#animateMascot').check();
     await page.waitForTimeout(400);
@@ -260,15 +364,18 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
       return { moving: first !== second, visible: Number(getComputedStyle(note).opacity) > 0, decorative: container.getAttribute('aria-hidden') === 'true', clicks: getComputedStyle(container).pointerEvents };
     });
     assert(notes.moving && notes.visible && notes.decorative);
+    assert.equal(await page.locator('body').evaluate(el => getComputedStyle(el, '::after').animationName), 'sound-wave-pulse');
     assert.equal(notes.clicks, 'none');
     checks++;
     await page.locator('#animateMascot').uncheck();
     assert.equal(await page.locator('.ambient-notes').evaluate(el => getComputedStyle(el).display), 'none');
+    assert.equal(await page.locator('body').evaluate(el => getComputedStyle(el, '::after').animationName), 'none');
     await page.locator('#animateMascot').check();
     checks++;
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.waitForTimeout(60);
     assert.equal(await page.locator('.ambient-notes').evaluate(el => getComputedStyle(el).display), 'none');
+    assert.equal(await page.locator('body').evaluate(el => getComputedStyle(el, '::after').animationName), 'none');
     assert.equal(await page.locator('.mascot-eyes').evaluate(el => getComputedStyle(el).animationName), 'none');
     checks++;
     await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -289,6 +396,6 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     assert.equal(await page.locator('#saved').evaluate(el => getComputedStyle(el).animationName), 'none');
     checks++;
     assert.deepEqual(errors, []);
-    console.log(`PASS: ${checks} state, layout, keyboard and feedback checks; EN/VI, long content, failed refresh, empty/filtered/overlapping classes, settings at 320/390/1100px. Artifacts: ${artifactDir}`);
+    console.log(`PASS: ${checks} state, layout, keyboard and feedback checks; EN/VI, long content, failed refresh, empty/filtered/overlapping classes, settings at 320/390/651/800/1100px. Artifacts: ${artifactDir}`);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
