@@ -213,7 +213,14 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     await page.locator('#classes').evaluate(el=>window.scrollTo(0,scrollY+el.getBoundingClientRect().top-30));
     await page.waitForFunction(()=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#classes');
     checks+=2;
-    await page.locator('#filterType').selectOption('legacy');
+    await page.locator('#filterType input[value=code]').focus();
+    await page.keyboard.press('ArrowRight');
+    assert(await page.locator('#filterType input[value=name]').isChecked());
+    assert.equal(await page.locator('#filterForm').getAttribute('data-mode'),'name');
+    await page.keyboard.press('ArrowLeft');
+    assert(await page.locator('#filterType input[value=code]').isChecked());
+    checks++;
+    await page.locator('#filterType input[value=legacy] + span').click();
     await page.locator('#filterMatch').fill('501042');
     await page.locator('#filterMatch').press('Enter');
     await page.waitForTimeout(450);
@@ -239,7 +246,7 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     await page.locator('#blacklist .subject-action').first().click();
     await page.locator('#blacklist .subject-action').first().click();
     await page.locator('#filterKeyword').fill('ignored');
-    await page.locator('#filterType').selectOption('code');
+    await page.locator('#filterType input[value=code] + span').click();
     assert(!(await page.locator('#filterKeyword').isVisible()));
     assert(await page.locator('#filterKeyword').isDisabled());
     await page.locator('#filterMatch').fill('SOLO');
@@ -250,7 +257,7 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     // Editing a subject must refresh its filter action without replacing the focused input.
     const editableCode = page.locator('#subjects .code').first();
     const savedCode = await editableCode.inputValue();
-    await page.locator('#filterType').selectOption('code');
+    await page.locator('#filterType input[value=code] + span').click();
     await page.locator('#filterMatch').fill('UI-TEST');
     await page.locator('#filterMatch').press('Enter');
     await editableCode.fill('UI-TEST');
@@ -277,7 +284,7 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     checks++;
     await page.locator('#addBlack').click();
     assert(await page.locator('#filterError').isVisible());
-    await page.locator('#filterType').selectOption('name');
+    await page.locator('#filterType input[value=name] + span').click();
     await page.locator('#filterMatch').fill('lập trình');
     await page.locator('#filterMatch').press('Enter');
     await page.waitForFunction(()=>JSON.parse(localStorage.getItem('settings')).blacklist.some(b=>b.type==='name' && b.match==='lập trình'));
@@ -291,13 +298,13 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     assert(await page.locator('#filterMatch').evaluate(el=>el===document.activeElement));
     checks++;
     // Explicit code rules must not match names; name rules must affect actual exports.
-    await page.locator('#filterType').selectOption('code');
+    await page.locator('#filterType input[value=code] + span').click();
     await page.locator('#filterMatch').fill('lập trình');
     await page.locator('#filterMatch').press('Enter');
     await page.waitForTimeout(450);
     assert.equal(await page.evaluate(async()=>{await loadSettings(); return isBlacklisted({code:'501042',name:'Phương pháp lập trình'});}),false);
     await page.locator('#blacklist .subject-action').click();
-    await page.locator('#filterType').selectOption('name');
+    await page.locator('#filterType input[value=name] + span').click();
     await page.locator('#filterMatch').fill('lập trình');
     await page.locator('#filterMatch').press('Enter');
     await page.waitForTimeout(450);

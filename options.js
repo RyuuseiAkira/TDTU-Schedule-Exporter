@@ -247,8 +247,9 @@ $('addRow').addEventListener('click', () => {
   if (inputs.length) inputs[inputs.length - 1].focus();
 });
 
+function selectedFilterMode() { return $('filterType').querySelector('input:checked').value; }
 function updateFilterField() {
-  const mode = $('filterType').value, combined = mode === 'legacy';
+  const mode = selectedFilterMode(), combined = mode === 'legacy';
   const code = mode !== 'name';
   $('filterForm').dataset.mode = mode;
   $('filterMatchLabel').textContent = tr(code ? 'Mã môn' : 'Tên chứa');
@@ -256,8 +257,9 @@ function updateFilterField() {
   $('filterKeywordField').hidden = !combined;
   $('filterKeyword').disabled = !combined;
   $('filterKeyword').placeholder = tr('Ví dụ: tiếng anh');
-  $('filterCombinedHint').hidden = !combined;
-  $('filterMatch').setAttribute('aria-describedby', combined ? 'filterError filterCombinedHint' : 'filterError');
+  $('filterOr').hidden = !combined;
+  $('filterCombinedHint').textContent = tr(combined ? 'Nhập mã môn, từ khoá hoặc cả hai.' : code ? 'Khớp chính xác toàn bộ mã môn.' : 'Khớp từ khoá ở bất kỳ vị trí nào trong tên môn.');
+  $('filterMatch').setAttribute('aria-describedby', 'filterError filterCombinedHint');
 }
 function clearFilterError() {
   $('filterError').hidden = true;
@@ -267,7 +269,7 @@ $('filterType').addEventListener('change', () => { updateFilterField(); clearFil
 for (const id of ['filterMatch', 'filterKeyword']) $(id).addEventListener('input', clearFilterError);
 $('filterForm').addEventListener('submit', event => {
   event.preventDefault();
-  const mode = $('filterType').value;
+  const mode = selectedFilterMode();
   const candidates = [{match: cleanStr($('filterMatch').value, 100), type: mode === 'legacy' ? 'code' : mode, field:'filterMatch'}];
   if (mode === 'legacy') candidates.push({match:cleanStr($('filterKeyword').value, 100), type:'name', field:'filterKeyword'});
   const rules = candidates.filter(rule => rule.match);

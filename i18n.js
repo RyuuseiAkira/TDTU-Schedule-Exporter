@@ -1,5 +1,9 @@
 // UI translations only. Subject names, filters and exported event identities stay unchanged.
 const UI_EN = {
+  "hoặc": "or",
+  "Nhập mã môn, từ khoá hoặc cả hai.": "Enter a code, a keyword, or both.",
+  "Khớp chính xác toàn bộ mã môn.": "Matches the full subject code.",
+  "Khớp từ khoá ở bất kỳ vị trí nào trong tên môn.": "Matches a keyword anywhere in the subject name.",
   "Từ khoá": "Keyword",
   "Điền một hoặc cả hai ô. Lớp khớp mã môn hoặc từ khoá đều sẽ bị ẩn.": "Fill either or both fields. Classes matching the code or keyword will be hidden.",
   "Ví dụ: 501042 hoặc tiếng anh": "e.g. 501042 or tiếng anh",

@@ -64,12 +64,24 @@
       <h3><span data-i18n="Môn muốn ẩn">Subjects to hide</span></h3>
       <p class="hint"><span data-i18n="Ẩn theo mã môn chính xác hoặc từ khoá trong tên môn.">Match an exact subject code or a word in the subject name.</span></p>
       <form id="filterForm" class="filter-composer">
-        <div class="filter-field"><label for="filterType"><span data-i18n="Ẩn theo">Match by</span></label><select id="filterType"><option value="legacy" data-i18n="Mã hoặc từ khoá">Code or keyword</option><option value="code" data-i18n="Mã môn">Subject code</option><option value="name" data-i18n="Tên chứa">Name contains</option></select></div>
-        <div class="filter-field filter-value"><label for="filterMatch" id="filterMatchLabel"><span data-i18n="Mã môn">Subject code</span></label><input type="text" id="filterMatch" maxlength="100" placeholder="e.g. 501042" spellcheck="false" aria-describedby="filterError"></div>
-        <div class="filter-field" id="filterKeywordField" hidden><label for="filterKeyword" data-i18n="Từ khoá">Keyword</label><input type="text" id="filterKeyword" maxlength="100" spellcheck="false" aria-describedby="filterError filterCombinedHint"></div>
-        <p id="filterCombinedHint" class="filter-combined-hint" data-i18n="Điền một hoặc cả hai ô. Lớp khớp mã môn hoặc từ khoá đều sẽ bị ẩn." hidden>Fill either or both fields. Classes matching the code or keyword will be hidden.</p>
-        <button class="btn" id="addBlack" type="submit"><span data-icon="plus" aria-hidden="true"></span><span data-i18n="Ẩn môn">Hide subject</span></button>
+        <fieldset id="filterType" class="filter-modes">
+          <legend data-i18n="Ẩn theo">Match by</legend>
+          <div class="filter-mode-options">
+            <label><input class="visually-hidden" type="radio" name="filterMode" value="legacy" checked><span data-i18n="Mã hoặc từ khoá">Code or keyword</span></label>
+            <label><input class="visually-hidden" type="radio" name="filterMode" value="code"><span data-i18n="Mã môn">Subject code</span></label>
+            <label><input class="visually-hidden" type="radio" name="filterMode" value="name"><span data-i18n="Tên chứa">Name contains</span></label>
+          </div>
+        </fieldset>
+        <div class="filter-inputs">
+          <div class="filter-field filter-value"><label for="filterMatch" id="filterMatchLabel"><span data-i18n="Mã môn">Subject code</span></label><input type="text" id="filterMatch" maxlength="100" placeholder="e.g. 501042" spellcheck="false" aria-describedby="filterError filterCombinedHint"></div>
+          <span id="filterOr" class="filter-or" data-i18n="hoặc" aria-hidden="true">or</span>
+          <div class="filter-field" id="filterKeywordField"><label for="filterKeyword" data-i18n="Từ khoá">Keyword</label><input type="text" id="filterKeyword" maxlength="100" spellcheck="false" aria-describedby="filterError filterCombinedHint"></div>
+        </div>
         <p id="filterError" class="field-error" role="status" hidden></p>
+        <div class="filter-form-footer">
+          <p id="filterCombinedHint" class="filter-combined-hint">Enter a code, a keyword, or both.</p>
+          <button class="btn" id="addBlack" type="submit"><span data-icon="plus" aria-hidden="true"></span><span data-i18n="Ẩn môn">Hide subject</span></button>
+        </div>
       </form>
       <div id="blacklist" aria-label="Hidden subjects" data-i18n-aria-label="Môn học được ẩn"></div>
     </div>

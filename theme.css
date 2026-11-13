@@ -121,9 +121,23 @@ body{isolation:isolate}
 @media(prefers-reduced-motion:no-preference){.settings-page:not(.motion-off):after{animation:sound-wave-pulse 9s ease-in-out infinite;transform-origin:center}}
 @keyframes sound-wave-pulse{0%,100%{transform:scale(.94);opacity:.6}50%{transform:scale(1.06);opacity:1}}
 
-/* Combined filtering keeps code and name matching explicit and independent. */
-.settings-page .filter-composer[data-mode=legacy]{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-.settings-page .filter-composer[data-mode=legacy]>.filter-field:first-child{grid-column:1/-1}
-.settings-page .filter-composer[data-mode=legacy] .btn{grid-column:1/-1;justify-self:start}
-.filter-combined-hint{grid-column:1/-1;margin:0;color:#a9c5ca;font-size:11px;line-height:1.7}
-@media(max-width:760px){.settings-page .filter-composer[data-mode=legacy]{grid-template-columns:1fr}}
+/* A compact filter composer with native keyboard-accessible mode choices. */
+.settings-page #filterForm{display:block;padding:18px;margin:16px 0 8px;background:#123136;border-color:#355c60;border-radius:12px}
+.filter-modes{border:0;padding:0;margin:0 0 18px;min-width:0}
+.filter-modes legend{font-size:11px;color:#adc9ca;margin-bottom:8px;padding:0}
+.filter-mode-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:4px;background:#0e272d;border:1px solid #2c4c54;border-radius:9px}
+.settings-page .filter-mode-options label{position:relative;margin:0;cursor:pointer;min-width:0}
+.filter-mode-options label>span{display:flex;align-items:center;justify-content:center;min-height:35px;padding:7px 8px;color:#a9c9cc;border:1px solid transparent;border-radius:6px;font-size:11px;line-height:1.5;text-align:center}
+.filter-mode-options input:checked+span{background:#245354;border-color:#568f89;color:#dffff4;font-weight:600}
+.filter-mode-options label:hover span{color:#e0faf4}.filter-mode-options input:focus-visible+span{outline:2px solid #b5ffeb;outline-offset:2px}
+.filter-inputs{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:end}
+.filter-composer:not([data-mode=legacy]) .filter-inputs{grid-template-columns:minmax(0,1fr)}
+.settings-page #filterForm .filter-field label{font-size:12px;color:#c4dfdc;margin-bottom:7px}
+.settings-page #filterForm .filter-field input{background:#0f2b32;border-color:#436871;min-height:44px;font-size:13px;padding:10px 12px;border-radius:8px}
+.settings-page #filterForm .filter-field input:focus{border-color:#8ce3d5}
+.filter-or{display:grid;place-items:center;height:44px;color:#8eb7b9;font-size:11px;font-style:italic}
+.filter-form-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid #2c4e54}
+.filter-form-footer .filter-combined-hint{margin:0;color:#a7c6c8;font-size:11px;line-height:1.7;max-width:40ch}
+.settings-page #filterForm .btn{width:auto;flex-shrink:0;min-height:40px;padding:10px 14px;font-size:12px;border-radius:8px}
+#filterForm .field-error{margin-top:12px}
+@media(max-width:480px){.settings-page #filterForm{padding:13px}.filter-mode-options{grid-template-columns:1fr}.filter-mode-options label>span{justify-content:flex-start;padding-left:11px;min-height:33px}.filter-inputs{grid-template-columns:1fr;gap:8px}.filter-or{height:18px;display:flex;gap:10px;font-size:10px}.filter-or:before,.filter-or:after{content:'';height:1px;flex:1;background:#31545b}.filter-form-footer{align-items:stretch;flex-direction:column;gap:11px;margin-top:14px}.settings-page #filterForm .btn{width:100%}.filter-modes{margin-bottom:15px}}
