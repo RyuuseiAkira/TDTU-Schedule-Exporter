@@ -323,15 +323,18 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
       return { moving: first !== second, visible: Number(getComputedStyle(note).opacity) > 0, decorative: container.getAttribute('aria-hidden') === 'true', clicks: getComputedStyle(container).pointerEvents };
     });
     assert(notes.moving && notes.visible && notes.decorative);
+    assert.equal(await page.locator('body').evaluate(el => getComputedStyle(el, '::after').animationName), 'sound-wave-pulse');
     assert.equal(notes.clicks, 'none');
     checks++;
     await page.locator('#animateMascot').uncheck();
     assert.equal(await page.locator('.ambient-notes').evaluate(el => getComputedStyle(el).display), 'none');
+    assert.equal(await page.locator('body').evaluate(el => getComputedStyle(el, '::after').animationName), 'none');
     await page.locator('#animateMascot').check();
     checks++;
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.waitForTimeout(60);
     assert.equal(await page.locator('.ambient-notes').evaluate(el => getComputedStyle(el).display), 'none');
+    assert.equal(await page.locator('body').evaluate(el => getComputedStyle(el, '::after').animationName), 'none');
     assert.equal(await page.locator('.mascot-eyes').evaluate(el => getComputedStyle(el).animationName), 'none');
     checks++;
     await page.emulateMedia({ reducedMotion: 'no-preference' });

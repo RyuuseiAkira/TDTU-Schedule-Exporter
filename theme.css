@@ -108,3 +108,15 @@ body{isolation:isolate}
 @media(max-width:1000px){.settings-page .wrap{column-gap:26px;grid-template-columns:160px minmax(0,1fr)}.settings-page #subjects .row{grid-template-columns:100px minmax(0,1fr)}.settings-page .subject-palette{flex-wrap:wrap;gap:8px 14px}.settings-header .autosave{font-size:10px}.settings-page .filter-composer{grid-template-columns:130px minmax(0,1fr)}.settings-page .filter-composer .btn{grid-column:1/-1;justify-self:start}}
 @media(max-width:760px){.settings-page .wrap{display:block;padding:20px 18px 70px}.settings-header{gap:12px;flex-wrap:wrap}.settings-header .mascot-head{width:60px;height:60px}.settings-header h1{font-size:25px}.settings-header .sub{font-size:11px}.settings-header .autosave{margin-left:72px;font-size:10px}.settings-nav{position:static;display:flex;flex-direction:row;flex-wrap:wrap;gap:5px;padding-top:4px;margin-top:0}.settings-page .settings-nav a{min-height:38px;padding:8px 10px;font-size:11px;gap:7px}.settings-nav .ui-icon{width:15px;height:15px}.settings-page section{padding-top:25px}.settings-page #subjects .row{gap:10px;grid-template-columns:92px minmax(0,1fr)}.settings-page .dot{width:25px;height:25px}.settings-page .filter-composer{padding:12px;grid-template-columns:1fr}.settings-page .filter-composer .btn{width:100%}.settings-page .hidden-rule{gap:10px}.settings-page .hidden-rule .subject-action{padding:8px;font-size:11px}.settings-page h2{font-size:19px}}
 @media(forced-colors:active){.settings-page .filter-toggle input{appearance:auto}.settings-page .filter-toggle input:before{display:none}}
+
+/* Quiet Miku ambience: mint light, a pink accent, and the popup's dotted motif. */
+.settings-page{background-color:#0d272a;background-image:radial-gradient(ellipse at 0% 0%,#22626566 0%,transparent 52%),radial-gradient(ellipse at 100% 85%,#73365524 0%,transparent 46%),linear-gradient(135deg,#102e32 0%,#0d2228 70%);background-attachment:fixed}
+.settings-page:before,.settings-page:after{content:'';position:fixed;pointer-events:none;z-index:0}
+.settings-page:before{inset:0;background-image:radial-gradient(#71d9cf38 1px,transparent 1px);background-size:14px 14px;-webkit-mask-image:radial-gradient(ellipse 46% 65% at 100% 0%,#000 0%,transparent 85%);mask-image:radial-gradient(ellipse 46% 65% at 100% 0%,#000 0%,transparent 85%)}
+.settings-page:after{width:440px;height:440px;right:-280px;bottom:8vh;border:1px solid #71d9cf18;border-radius:50%;box-shadow:0 0 0 38px #71d9cf08,0 0 0 76px #71d9cf06,0 0 0 114px #e990bd05}
+@media(max-width:760px){.settings-page:before{opacity:.6}.settings-page:after{right:-370px}}
+@media(forced-colors:active){.settings-page:before,.settings-page:after{display:none}}
+
+/* A slow, quiet pulse; animate the ring layer without repainting its shadows. */
+@media(prefers-reduced-motion:no-preference){.settings-page:not(.motion-off):after{animation:sound-wave-pulse 9s ease-in-out infinite;transform-origin:center}}
+@keyframes sound-wave-pulse{0%,100%{transform:scale(.94);opacity:.6}50%{transform:scale(1.06);opacity:1}}
