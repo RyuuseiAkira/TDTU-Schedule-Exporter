@@ -213,6 +213,13 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     await page.locator('#classes').evaluate(el=>window.scrollTo(0,scrollY+el.getBoundingClientRect().top-30));
     await page.waitForFunction(()=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#classes');
     checks+=2;
+    await page.locator('#filterType').selectOption('legacy');
+    await page.locator('#filterMatch').fill('501042');
+    await page.locator('#filterMatch').press('Enter');
+    await page.waitForTimeout(450);
+    assert.equal(await page.evaluate(async()=>{await loadSettings();return isBlacklisted({code:'501042',name:'Example'});}),true);
+    await page.locator('#blacklist .subject-action').click();
+    checks++;
     // Editing a subject must refresh its filter action without replacing the focused input.
     const editableCode = page.locator('#subjects .code').first();
     const savedCode = await editableCode.inputValue();

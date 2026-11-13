@@ -64,7 +64,7 @@
       <h3><span data-i18n="Môn muốn ẩn">Subjects to hide</span></h3>
       <p class="hint"><span data-i18n="Ẩn theo mã môn chính xác hoặc từ khoá trong tên môn.">Match an exact subject code or a word in the subject name.</span></p>
       <form id="filterForm" class="filter-composer">
-        <div class="filter-field"><label for="filterType"><span data-i18n="Ẩn theo">Match by</span></label><select id="filterType"><option value="code" data-i18n="Mã môn">Subject code</option><option value="name" data-i18n="Tên chứa">Name contains</option></select></div>
+        <div class="filter-field"><label for="filterType"><span data-i18n="Ẩn theo">Match by</span></label><select id="filterType"><option value="legacy" data-i18n="Mã hoặc từ khoá">Code or keyword</option><option value="code" data-i18n="Mã môn">Subject code</option><option value="name" data-i18n="Tên chứa">Name contains</option></select></div>
         <div class="filter-field filter-value"><label for="filterMatch" id="filterMatchLabel"><span data-i18n="Mã môn">Subject code</span></label><input type="text" id="filterMatch" maxlength="100" placeholder="e.g. 501042" spellcheck="false" aria-describedby="filterError"></div>
         <button class="btn" id="addBlack" type="submit"><span data-icon="plus" aria-hidden="true"></span><span data-i18n="Ẩn môn">Hide subject</span></button>
         <p id="filterError" class="field-error" role="status" hidden></p>

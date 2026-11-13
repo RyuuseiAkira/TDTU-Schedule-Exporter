@@ -249,8 +249,8 @@ $('addRow').addEventListener('click', () => {
 
 function updateFilterField() {
   const code = $('filterType').value === 'code';
-  $('filterMatchLabel').textContent = tr(code ? 'Mã môn' : 'Tên chứa');
-  $('filterMatch').placeholder = tr(code ? 'Ví dụ: 501042' : 'Ví dụ: tiếng anh');
+  $('filterMatchLabel').textContent = tr($('filterType').value === 'legacy' ? 'Mã hoặc từ khoá' : code ? 'Mã môn' : 'Tên chứa');
+  $('filterMatch').placeholder = tr($('filterType').value === 'legacy' ? 'Ví dụ: 501042 hoặc tiếng anh' : code ? 'Ví dụ: 501042' : 'Ví dụ: tiếng anh');
 }
 $('filterType').addEventListener('change', () => { updateFilterField(); $('filterError').hidden = true; $('filterMatch').removeAttribute('aria-invalid'); });
 $('filterMatch').addEventListener('input', () => { $('filterError').hidden = true; $('filterMatch').removeAttribute('aria-invalid'); });
@@ -262,7 +262,7 @@ $('filterForm').addEventListener('submit', event => {
     $('filterError').textContent = tr(error); $('filterError').hidden = false;
     $('filterMatch').setAttribute('aria-invalid', 'true'); $('filterMatch').focus(); return;
   }
-  blacklist.push({ match, name: '', type });
+  blacklist.push({ match, name: '', ...(type === 'legacy' ? {} : {type}) });
   $('filterMatch').value = ''; $('filterMatch').removeAttribute('aria-invalid');
   save(); render(); $('filterMatch').focus();
 });

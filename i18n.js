@@ -1,5 +1,6 @@
 // UI translations only. Subject names, filters and exported event identities stay unchanged.
 const UI_EN = {
+  "Ví dụ: 501042 hoặc tiếng anh": "e.g. 501042 or tiếng anh",
   "Xem bộ lọc": "Review filter",
   "Tối đa 100 quy tắc. Khôi phục một môn trước khi thêm.": "Maximum 100 rules. Restore a subject before adding another.",
   "Điều chỉnh giao diện, chọn lớp cần giữ và kết nối lịch.": "Make it yours. Choose your classes and connect your calendar.",
