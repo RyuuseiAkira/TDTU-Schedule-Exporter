@@ -1,5 +1,7 @@
 // UI translations only. Subject names, filters and exported event identities stay unchanged.
 const UI_EN = {
+  "Từ khoá": "Keyword",
+  "Điền một hoặc cả hai ô. Lớp khớp mã môn hoặc từ khoá đều sẽ bị ẩn.": "Fill either or both fields. Classes matching the code or keyword will be hidden.",
   "Ví dụ: 501042 hoặc tiếng anh": "e.g. 501042 or tiếng anh",
   "Xem bộ lọc": "Review filter",
   "Tối đa 100 quy tắc. Khôi phục một môn trước khi thêm.": "Maximum 100 rules. Restore a subject before adding another.",

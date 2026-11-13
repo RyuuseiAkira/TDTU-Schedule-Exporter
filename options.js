@@ -248,22 +248,38 @@ $('addRow').addEventListener('click', () => {
 });
 
 function updateFilterField() {
-  const code = $('filterType').value === 'code';
-  $('filterMatchLabel').textContent = tr($('filterType').value === 'legacy' ? 'Mã hoặc từ khoá' : code ? 'Mã môn' : 'Tên chứa');
-  $('filterMatch').placeholder = tr($('filterType').value === 'legacy' ? 'Ví dụ: 501042 hoặc tiếng anh' : code ? 'Ví dụ: 501042' : 'Ví dụ: tiếng anh');
+  const mode = $('filterType').value, combined = mode === 'legacy';
+  const code = mode !== 'name';
+  $('filterForm').dataset.mode = mode;
+  $('filterMatchLabel').textContent = tr(code ? 'Mã môn' : 'Tên chứa');
+  $('filterMatch').placeholder = tr(code ? 'Ví dụ: 501042' : 'Ví dụ: tiếng anh');
+  $('filterKeywordField').hidden = !combined;
+  $('filterKeyword').disabled = !combined;
+  $('filterKeyword').placeholder = tr('Ví dụ: tiếng anh');
+  $('filterCombinedHint').hidden = !combined;
+  $('filterMatch').setAttribute('aria-describedby', combined ? 'filterError filterCombinedHint' : 'filterError');
 }
-$('filterType').addEventListener('change', () => { updateFilterField(); $('filterError').hidden = true; $('filterMatch').removeAttribute('aria-invalid'); });
-$('filterMatch').addEventListener('input', () => { $('filterError').hidden = true; $('filterMatch').removeAttribute('aria-invalid'); });
+function clearFilterError() {
+  $('filterError').hidden = true;
+  for (const id of ['filterMatch', 'filterKeyword']) $(id).removeAttribute('aria-invalid');
+}
+$('filterType').addEventListener('change', () => { updateFilterField(); clearFilterError(); });
+for (const id of ['filterMatch', 'filterKeyword']) $(id).addEventListener('input', clearFilterError);
 $('filterForm').addEventListener('submit', event => {
   event.preventDefault();
-  const match = cleanStr($('filterMatch').value, 100), type = $('filterType').value;
-  const error = blacklist.length >= 100 ? 'Tối đa 100 quy tắc. Khôi phục một môn trước khi thêm.' : !match ? 'Nhập mã môn hoặc từ khoá để ẩn.' : blacklist.some(b => b.match.toLowerCase() === match.toLowerCase() && ruleType(b) === type) ? 'Quy tắc này đã có trong danh sách.' : '';
+  const mode = $('filterType').value;
+  const candidates = [{match: cleanStr($('filterMatch').value, 100), type: mode === 'legacy' ? 'code' : mode, field:'filterMatch'}];
+  if (mode === 'legacy') candidates.push({match:cleanStr($('filterKeyword').value, 100), type:'name', field:'filterKeyword'});
+  const rules = candidates.filter(rule => rule.match);
+  const duplicate = rules.find(rule => blacklist.some(b => b.match.toLowerCase() === rule.match.toLowerCase() && ruleType(b) === rule.type));
+  const error = blacklist.length + rules.length > 100 ? 'Tối đa 100 quy tắc. Khôi phục một môn trước khi thêm.' : !rules.length ? 'Nhập mã môn hoặc từ khoá để ẩn.' : duplicate ? 'Quy tắc này đã có trong danh sách.' : '';
   if (error) {
     $('filterError').textContent = tr(error); $('filterError').hidden = false;
-    $('filterMatch').setAttribute('aria-invalid', 'true'); $('filterMatch').focus(); return;
+    const field = $(duplicate ? duplicate.field : 'filterMatch');
+    field.setAttribute('aria-invalid', 'true'); field.focus(); return;
   }
-  blacklist.push({ match, name: '', ...(type === 'legacy' ? {} : {type}) });
-  $('filterMatch').value = ''; $('filterMatch').removeAttribute('aria-invalid');
+  blacklist.push(...rules.map(({match, type}) => ({match, name:'', type})));
+  $('filterMatch').value = ''; $('filterKeyword').value = ''; clearFilterError();
   save(); render(); $('filterMatch').focus();
 });
 

@@ -120,3 +120,10 @@ body{isolation:isolate}
 /* A slow, quiet pulse; animate the ring layer without repainting its shadows. */
 @media(prefers-reduced-motion:no-preference){.settings-page:not(.motion-off):after{animation:sound-wave-pulse 9s ease-in-out infinite;transform-origin:center}}
 @keyframes sound-wave-pulse{0%,100%{transform:scale(.94);opacity:.6}50%{transform:scale(1.06);opacity:1}}
+
+/* Combined filtering keeps code and name matching explicit and independent. */
+.settings-page .filter-composer[data-mode=legacy]{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.settings-page .filter-composer[data-mode=legacy]>.filter-field:first-child{grid-column:1/-1}
+.settings-page .filter-composer[data-mode=legacy] .btn{grid-column:1/-1;justify-self:start}
+.filter-combined-hint{grid-column:1/-1;margin:0;color:#a9c5ca;font-size:11px;line-height:1.7}
+@media(max-width:760px){.settings-page .filter-composer[data-mode=legacy]{grid-template-columns:1fr}}
