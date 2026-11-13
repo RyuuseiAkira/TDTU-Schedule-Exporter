@@ -111,13 +111,13 @@ function render() {
     code.type = 'text'; code.className = 'code'; code.placeholder = tr('Mã môn');
     code.setAttribute('aria-label', tr('Mã môn học'));
     code.value = r.code; code.spellcheck = false;
-    code.addEventListener('input', () => { r.code = code.value.trim(); ban.disabled = !r.code; markDuplicates(); save(); });
+    code.addEventListener('input', () => { r.code = code.value.trim(); updateSubjectAction(); markDuplicates(); save(); });
 
     const name = document.createElement('input');
     name.type = 'text'; name.className = 'name'; name.placeholder = tr('Tên môn (tuỳ chọn)');
     name.setAttribute('aria-label', tr('Tên môn học'));
     name.value = r.name;
-    name.addEventListener('input', () => { r.name = name.value; save(); });
+    name.addEventListener('input', () => { r.name = name.value; updateSubjectAction(); save(); });
 
     const pal = palette(r.color, k => { r.color = k; save(); render(); });
     pal.setAttribute('aria-label', tr('Màu môn học') + ' ' + r.code);
@@ -126,8 +126,8 @@ function render() {
       rows.splice(i, 1); save(); render();
       ($('subjects').querySelector('.code') || $('addRow')).focus();
     });
-    const hidden = blacklist.some(rule => matchesFilter({code:r.code, name:r.name}, rule));
-    const directHidden = r.code && exactRuleIndex(r.code) >= 0;
+    let hidden = blacklist.some(rule => matchesFilter({code:r.code, name:r.name}, rule));
+    let directHidden = r.code && exactRuleIndex(r.code) >= 0;
     const ban = actionButton(directHidden ? 'restore' : hidden ? 'filter' : 'hide', tr(directHidden ? 'Khôi phục' : hidden ? 'Xem bộ lọc' : 'Ẩn môn'), () => {
       if (hidden && !directHidden) {
         $('excluded').scrollIntoView({block:'start'});
@@ -142,14 +142,26 @@ function render() {
       save(); render();
       $('subjects').children[i]?.querySelector('.subject-action')?.focus();
     }, true);
-    ban.disabled = !r.code;
-    if (hidden) row.classList.add('subject-hidden');
+    function updateSubjectAction() {
+      hidden = blacklist.some(rule => matchesFilter({code:r.code, name:r.name}, rule));
+      directHidden = r.code && exactRuleIndex(r.code) >= 0;
+      const label = tr(directHidden ? 'Khôi phục' : hidden ? 'Xem bộ lọc' : 'Ẩn môn');
+      ban.replaceChildren(icon(directHidden ? 'restore' : hidden ? 'filter' : 'hide'), document.createTextNode(label));
+      ban.title = label;
+      ban.setAttribute('aria-label', label);
+      ban.disabled = !r.code;
+      row.classList.toggle('subject-hidden', hidden);
+      pal.setAttribute('aria-label', tr('Màu môn học') + ' ' + r.code);
+    }
+    updateSubjectAction();
     const actions = document.createElement('div'); actions.className = 'subject-actions';
     actions.append(ban, del);
     const colorField = document.createElement('div'); colorField.className = 'subject-palette';
     const colorLabel = document.createElement('span'); colorLabel.textContent = tr('Màu sự kiện');
     colorField.append(colorLabel, pal);
-    row.append(labelledField(tr('Mã môn'), code), labelledField(tr('Tên môn (tuỳ chọn)'), name), actions, colorField);
+    const controls = document.createElement('div'); controls.className = 'subject-controls';
+    controls.append(colorField, actions);
+    row.append(labelledField(tr('Mã môn'), code), labelledField(tr('Tên môn (tuỳ chọn)'), name), controls);
     box.appendChild(row);
   });
   if (!rows.length) box.innerHTML = tr('<p class="hint">Chưa có môn nào. Bấm “Thêm môn”.</p>');

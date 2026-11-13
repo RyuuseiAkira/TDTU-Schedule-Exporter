@@ -213,6 +213,20 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     await page.locator('#classes').evaluate(el=>window.scrollTo(0,scrollY+el.getBoundingClientRect().top-30));
     await page.waitForFunction(()=>document.querySelector('.settings-nav [aria-current=location]')?.getAttribute('href')==='#classes');
     checks+=2;
+    // Editing a subject must refresh its filter action without replacing the focused input.
+    const editableCode = page.locator('#subjects .code').first();
+    const savedCode = await editableCode.inputValue();
+    await page.locator('#filterType').selectOption('code');
+    await page.locator('#filterMatch').fill('UI-TEST');
+    await page.locator('#filterMatch').press('Enter');
+    await editableCode.fill('UI-TEST');
+    assert(await page.locator('#subjects .row').first().evaluate(el=>el.classList.contains('subject-hidden')));
+    assert(await editableCode.evaluate(el=>el===document.activeElement));
+    assert.match(await page.locator('#subjects .subject-action').first().innerText(), /Restore|Khôi phục/);
+    await editableCode.fill(savedCode);
+    assert(!(await page.locator('#subjects .row').first().evaluate(el=>el.classList.contains('subject-hidden'))));
+    await page.locator('#blacklist .subject-action').click();
+    checks++;
     // A hide/restore cycle must preserve color settings and persist across reloads.
     const subject = page.locator('#subjects .row').first();
     const originalCode = await subject.locator('input.code').inputValue();
@@ -285,7 +299,7 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     checks++;
     for (const language of ['en','vi']) {
       await page.locator('#language').selectOption(language);
-      for (const width of [320, 390, 1100]) {
+      for (const width of [320, 390, 651, 800, 1100]) {
         await page.setViewportSize({ width, height: 850 });
         await noOverflow();
         await page.locator('.settings-nav a[href="#appearance"]').evaluate(el=>el.click());
@@ -338,6 +352,6 @@ const base = { name: 'Phương pháp lập trình', code: '501042', room: 'F307'
     assert.equal(await page.locator('#saved').evaluate(el => getComputedStyle(el).animationName), 'none');
     checks++;
     assert.deepEqual(errors, []);
-    console.log(`PASS: ${checks} state, layout, keyboard and feedback checks; EN/VI, long content, failed refresh, empty/filtered/overlapping classes, settings at 320/390/1100px. Artifacts: ${artifactDir}`);
+    console.log(`PASS: ${checks} state, layout, keyboard and feedback checks; EN/VI, long content, failed refresh, empty/filtered/overlapping classes, settings at 320/390/651/800/1100px. Artifacts: ${artifactDir}`);
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
